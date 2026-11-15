@@ -1,7 +1,7 @@
 
 # Project Brief: Hamlet — an Autonomous Citizen City-to-Country Builder in Godot
 
-**Codename:** *Hamlet* · **Repo:** [github.com/ewanc26/hamlet](https://github.com/ewanc26/hamlet) · **Status:** Codifying (M0) · **Platform:** Desktop (Windows/Linux/macOS) · **Engine:** Godot 4.7 (current stable) — see §13 for the research basis of this revision
+**Codename:** *Hamlet* · **Repo:** [github.com/ewanc26/hamlet](https://github.com/ewanc26/hamlet) · **Status:** M0 complete (v0.1.0) — M1 First Citizen next · **Platform:** Desktop (Windows/Linux/macOS) · **Engine:** Godot 4.7 (current stable) — see §13 for the research basis of this revision
 
 ---
 
