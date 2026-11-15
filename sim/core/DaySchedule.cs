@@ -13,9 +13,13 @@ public sealed class DaySchedule
     public int NightStartHour { get; init; } = 21;
     public int ShiftStartHour { get; init; } = 9;
     public int ShiftEndHour { get; init; } = 17;
+    public int ShopOpenHour { get; init; } = 8;
+    public int ShopCloseHour { get; init; } = 20;
 
     /// <summary>Night runs from the night hour through to (but excluding) the wake hour.</summary>
     public bool IsNight(int hour) => hour >= NightStartHour || hour < WakeHour;
 
     public bool IsShift(int hour) => hour >= ShiftStartHour && hour < ShiftEndHour;
+
+    public bool IsShopOpen(int hour) => hour >= ShopOpenHour && hour < ShopCloseHour;
 }

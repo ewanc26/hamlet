@@ -20,10 +20,13 @@ public sealed class Simulation
     public Pathfinder Pathfinder { get; }
     public Congestion Congestion { get; }
     public LedgerBook LedgerBook { get; } = new();
+    public ShopBook Shops { get; }
     public AgentBodies Bodies { get; } = new();
     public HouseholdBook Households { get; } = new();
     public NeedRules Rules { get; } = NeedRules.Default;
     public DaySchedule Schedule { get; } = DaySchedule.Default;
+
+    private const long HouseholdOpeningCash = 240;
 
     private readonly Queue<ISimCommand> _inbox = new();
     private readonly List<SimEvent> _outbox = new();
@@ -35,6 +38,7 @@ public sealed class Simulation
         Grid = new WorldGrid(gridSize);
         Pathfinder = new Pathfinder(Grid);
         Congestion = new Congestion(gridSize);
+        Shops = new ShopBook(LedgerBook);
         TerrainGen.Generate(Grid, Random);
     }
 
@@ -148,6 +152,17 @@ public sealed class Simulation
             hash.Mix(household.WorkX);
             hash.Mix(household.WorkY);
             hash.Mix(household.MealsStocked);
+            hash.Mix(household.Wallet?.Balance ?? 0);
+            hash.Mix(household.CornerShop?.Id ?? 0);
+        }
+
+        foreach (var shop in Shops.Shops)
+        {
+            hash.Mix(shop.Id);
+            hash.Mix(shop.X);
+            hash.Mix(shop.Y);
+            hash.Mix(shop.MealsInStock);
+            hash.Mix(shop.Ledger.Balance);
         }
 
         foreach (var citizen in Bodies.Citizens)
@@ -193,6 +208,9 @@ public sealed class Simulation
             case FoundHousehold found:
                 Found(found);
                 break;
+            case FoundShop foundShop:
+                FoundShop(foundShop);
+                break;
             default:
                 throw new NotSupportedException($"unknown command: {command.GetType()}");
         }
@@ -203,7 +221,10 @@ public sealed class Simulation
         if (!Grid.InBounds(command.HomeX, command.HomeY) || !Grid.InBounds(command.WorkX, command.WorkY))
             throw new ArgumentOutOfRangeException(nameof(command), "household coordinates must be inside the world");
 
-        var household = Households.Found(command.HomeX, command.HomeY, command.WorkX, command.WorkY);
+        var household = Households.Found(
+            command.HomeX, command.HomeY, command.WorkX, command.WorkY, command.Meals);
+        household.Wallet = LedgerBook.OpenLedger(HouseholdOpeningCash);
+        household.CornerShop = Shops.Nearest(household.HomeX, household.HomeY);
         var members = Math.Max(1, command.Members);
         for (var i = 0; i < members; i++)
         {
@@ -231,6 +252,24 @@ public sealed class Simulation
             HouseholdId = household.Id,
             X = household.HomeX,
             Y = household.HomeY,
+        });
+    }
+
+    private void FoundShop(FoundShop command)
+    {
+        if (!Grid.InBounds(command.X, command.Y))
+            throw new ArgumentOutOfRangeException(nameof(command), "shop coordinates must be inside the world");
+
+        var shop = Shops.Found(command.X, command.Y, command.Meals, command.OpeningCash);
+        foreach (var household in Households.Households)
+            household.CornerShop ??= Shops.Nearest(household.HomeX, household.HomeY);
+
+        _outbox.Add(new SimEvent
+        {
+            Kind = SimEventKind.ShopFounded,
+            Tick = Clock.Tick,
+            X = shop.X,
+            Y = shop.Y,
         });
     }
 }

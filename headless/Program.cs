@@ -18,9 +18,11 @@ for (var i = 0; i < 100; i++)
     simulation.Enqueue(new PlaceRoad { X = 5 + i, Y = 7 });
 
 // M1: one settler household, home on the strip, job site at the far end.
+// M2: a corner shop two tiles from home keeps the pantry stocked.
+simulation.Enqueue(new FoundShop { X = 12, Y = 7 });
 simulation.Enqueue(new FoundHousehold { HomeX = 10, HomeY = 7, WorkX = 60, WorkY = 7, Members = 1 });
 
-var activityTicks = new long[4];
+var activityTicks = new long[5];
 var transitions = new List<string>();
 var lastActivity = ActivityKind.None;
 var maxX = 0;
@@ -57,7 +59,7 @@ Console.WriteLine(
 Console.WriteLine($"{simulation.Clock.Year:0000}-{simulation.Clock.Month:00}-{simulation.Clock.DayOfMonth:00}");
 Console.WriteLine($"route={string.Join(" → ", transitions)}");
 Console.WriteLine(
-    $"activity ticks: idle={activityTicks[0]} sleep={activityTicks[1]} eat={activityTicks[2]} work={activityTicks[3]} maxX={maxX}");
+    $"activity ticks: idle={activityTicks[0]} sleep={activityTicks[1]} eat={activityTicks[2]} work={activityTicks[3]} shop={activityTicks[4]} maxX={maxX}");
 
 var resident = simulation.Bodies.Citizens.FirstOrDefault();
 if (resident is not null)

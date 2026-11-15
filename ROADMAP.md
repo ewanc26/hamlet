@@ -27,8 +27,9 @@ the first household body remain.
 
 ## M2 detail — what lands next
 
-- **Jobs and shops as real entities**: firms with accounts, shifts, wages, and a
-  pantry that shops refill — the M1 household grows a real local economy.
+- **Jobs and shops as real entities**: shops are real counters with meal stock
+  and their own ledgers — households walk to the shop and buy groceries from a
+  wallet; wages and firm accounts are next.
 - **Pathfinding on the road graph**: A* with congestion-weighted edges,
   replacing the M1 straight-line walk — **landed** (tile-level first cut; the
   junction/flow-field hierarchy follows); citizens route around jams.

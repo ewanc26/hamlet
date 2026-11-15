@@ -10,4 +10,5 @@ public enum ActivityKind : byte
     Sleep,
     Eat,
     Work,
+    Shop,
 }

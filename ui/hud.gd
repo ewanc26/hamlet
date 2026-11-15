@@ -5,7 +5,7 @@ extends CanvasLayer
 
 const Palette = preload("res://ui/palette.gd")
 
-const ACTIVITY_NAMES := ["idle", "sleep", "eat", "work"]
+const ACTIVITY_NAMES := ["idle", "sleep", "eat", "work", "shop"]
 
 var _title: Label
 var _status: Label

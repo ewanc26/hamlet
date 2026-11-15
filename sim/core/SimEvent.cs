@@ -6,6 +6,7 @@ public enum SimEventKind
     RoadPlaced,
     SettlementFounded,
     HouseholdFounded,
+    ShopFounded,
     ActivityChanged,
 }
 

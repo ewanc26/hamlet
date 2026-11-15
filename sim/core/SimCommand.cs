@@ -17,4 +17,14 @@ public sealed class FoundHousehold : ISimCommand
     public int WorkX { get; init; }
     public int WorkY { get; init; }
     public int Members { get; init; } = 1;
+    public int Meals { get; init; } = Agent.Household.DefaultPantryMeals;
+}
+
+/// <summary>Found a shop counter with meal stock and its own ledger (§7.3).</summary>
+public sealed class FoundShop : ISimCommand
+{
+    public int X { get; init; }
+    public int Y { get; init; }
+    public int Meals { get; init; } = Economy.Shop.DefaultStock;
+    public long OpeningCash { get; init; }
 }

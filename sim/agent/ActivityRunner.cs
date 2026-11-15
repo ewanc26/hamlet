@@ -110,6 +110,17 @@ public static class ActivityRunner
                 citizen.LastWorkDay = clock.Day;
                 break;
             }
+
+            case ActivityKind.Shop:
+            {
+                if (next.PhaseTicks < rules.ShopTicks)
+                {
+                    citizen.Plan = next;
+                    return false;
+                }
+                household.TryBuyMeals(rules.ShopBundleMeals);
+                break;
+            }
         }
 
         citizen.Route.Clear();

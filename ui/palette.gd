@@ -56,5 +56,7 @@ static func activity_color(activity: int) -> Color:
 			return SAND
 		3:
 			return ACCENT
+		4:
+			return SAND.darkened(0.2)
 		_:
 			return ACCENT.lightened(0.35)

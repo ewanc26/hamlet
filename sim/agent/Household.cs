@@ -1,9 +1,11 @@
+using Hamlet.Sim.Economy;
+
 namespace Hamlet.Sim.Agent;
 
 /// <summary>
-/// The household is the unit that owns housing, the pantry, and later rent
-/// (§6.4). M1 founds one household per settler group; shops and wages arrive
-/// with the M2 economy, so the pantry is stocked at founding.
+/// The household is the unit that owns housing, the pantry, and the wallet
+/// (§6.4). It is paid wages, buys meals from its corner shop, and feeds its
+/// members from the pantry.
 /// </summary>
 public sealed class Household
 {
@@ -15,6 +17,12 @@ public sealed class Household
     public int WorkX { get; init; }
     public int WorkY { get; init; }
     public int MealsStocked { get; private set; }
+
+    /// <summary>Money account, opened when the sim founds the household (§7.3).</summary>
+    public Ledger? Wallet { get; set; }
+
+    /// <summary>The shop this household walks to when the pantry runs low.</summary>
+    public Shop? CornerShop { get; set; }
 
     public Household(long id, int homeX, int homeY, int workX, int workY, int meals)
     {
@@ -32,6 +40,20 @@ public sealed class Household
         if (MealsStocked <= 0)
             return false;
         MealsStocked--;
+        return true;
+    }
+
+    /// <summary>
+    /// Buy up to <paramref name="meals"/> from the corner shop with the
+    /// household wallet; the shop reports how many were actually affordable.
+    /// </summary>
+    public bool TryBuyMeals(int meals)
+    {
+        if (Wallet is null || CornerShop is null)
+            return false;
+        if (!CornerShop.TrySell(Wallet, meals, out var sold))
+            return false;
+        MealsStocked += sold;
         return true;
     }
 

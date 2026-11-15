@@ -28,4 +28,6 @@ public sealed class NeedRules
     public int SleepTicksPerEnergyPoint => 2;
     public int MealTicks => 20;
     public int MealHungerRestore => 45;
+    public int ShopTicks => 5;
+    public int ShopBundleMeals => 7;
 }

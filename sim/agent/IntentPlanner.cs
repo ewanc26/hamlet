@@ -43,7 +43,10 @@ public static class IntentPlanner
     }
 
     public static (int X, int Y) TargetOf(ActivityKind activity, Household household) =>
-        activity == ActivityKind.Work
-            ? (household.WorkX, household.WorkY)
-            : (household.HomeX, household.HomeY);
+        activity switch
+        {
+            ActivityKind.Work => (household.WorkX, household.WorkY),
+            ActivityKind.Shop when household.CornerShop is not null => (household.CornerShop.X, household.CornerShop.Y),
+            _ => (household.HomeX, household.HomeY),
+        };
 }
