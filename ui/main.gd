@@ -16,6 +16,7 @@ var _grid_size := 0
 var _frames := 0
 var _fps_clock := 0.0
 var _fps := 0.0
+var _focus_clock := 0.0
 
 
 func _ready() -> void:
@@ -33,6 +34,26 @@ func _process(delta: float) -> void:
 		_frames = 0
 		_fps_clock = 0.0
 		_hud.set_fps(_fps)
+	_send_camera_focus(delta)
+
+
+## Forward the camera focus to the sim once per second (§6.5 LOD tier 2): the
+## sim then runs on-camera citizens full and off-camera ones coarse. Batched
+## through the command queue, so it only ever lands on a tick boundary.
+func _send_camera_focus(delta: float) -> void:
+	_focus_clock += delta
+	if _focus_clock < 1.0:
+		return
+	_focus_clock = 0.0
+	var sim_host := get_node("/root/SimHost")
+	var target: Vector3 = _camera.target
+	var radius := clampi(int(_camera.distance), 4, 24)
+	sim_host.enqueue_command({
+		"type": "set_focus",
+		"x": int(round(target.x)),
+		"y": int(round(-target.z)),
+		"radius": radius,
+	})
 
 
 func _on_events_ready(events: Array) -> void:

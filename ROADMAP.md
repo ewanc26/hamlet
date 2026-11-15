@@ -15,7 +15,9 @@ entities now — firms pay shifts from payroll ledgers, households buy meal
 bundles from shop counters, and shops restock wholesale from a supplier firm
 each morning — and the stability gate is green: 100 citizens on one street
 stay fed and employed for 10 in-game days with no intervention, replaying
-bit-identically from the seed. LOD tier 2 and the first household body remain.
+bit-identically from the seed. LOD tier 2 is in: the camera focus square rides
+the command stream, and off-camera citizens move coarse while their needs stay
+full. The first household body remains.
 
 ## milestones
 
@@ -40,8 +42,12 @@ bit-identically from the seed. LOD tier 2 and the first household body remain.
 - **Pathfinding on the road graph** — **landed** (tile-level first cut; the
   junction/flow-field hierarchy follows): A* with congestion-weighted edges
   replaces the M1 straight-line walk; citizens route around jams.
-- **LOD tier 2**: off-camera citizens replan on the staggered 60-tick bucket and
-  move coarsely between anchors.
+- **LOD tier 2** — **landed**: the camera focus square travels as a
+  `SetCameraFocus` command (1 Hz from the presentation, so it lands only on
+  tick boundaries); inside it citizens run full LOD (one tile per tick),
+  outside they run standard — needs still decay every tick, replanning stays
+  on the staggered 60-tick bucket, and movement jumps straight to the plan's
+  anchor instead of per-tick nav.
 - **Household bodies**: compatible family trips merge into one body with mass,
   and a merge → split → merge round trip must be lossless (property test).
 - **100 citizens, 10 in-game days, no intervention** — **landed as the

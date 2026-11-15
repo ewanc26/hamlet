@@ -28,6 +28,9 @@ public sealed class Simulation
     public NeedRules Rules { get; } = NeedRules.Default;
     public DaySchedule Schedule { get; } = DaySchedule.Default;
 
+    /// <summary>The camera focus square (§6.5); null means everything runs full LOD.</summary>
+    public LodFocus? Focus { get; private set; }
+
     private const long HouseholdOpeningCash = 240;
 
     private readonly Queue<ISimCommand> _inbox = new();
@@ -107,7 +110,7 @@ public sealed class Simulation
         if ((Clock.Tick + citizen.Id) % ReplanInterval == 0 || InCrisis(citizen))
             Replan(citizen, household, allowHysteresis: true);
 
-        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules, Grid.Size))
+        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules, Grid.Size, coarse: !IsFullLod(citizen)))
             Replan(citizen, household, allowHysteresis: false);
 
         if (citizen.Plan.Intent == previous)
@@ -127,6 +130,9 @@ public sealed class Simulation
     private static bool InCrisis(Citizen citizen) =>
         (citizen.Needs.InCrisis(NeedKind.Hunger) && citizen.Plan.Intent != ActivityKind.Eat)
         || (citizen.Needs.InCrisis(NeedKind.Energy) && citizen.Plan.Intent != ActivityKind.Sleep);
+
+    /// <summary>Full LOD on/near the camera focus, standard LOD elsewhere (§6.5).</summary>
+    public bool IsFullLod(Citizen citizen) => Focus is null || Focus.Contains(citizen.X, citizen.Y);
 
     private void Replan(Citizen citizen, Household household, bool allowHysteresis)
     {
@@ -159,6 +165,9 @@ public sealed class Simulation
         hash.Mix(Grid.RoadCount);
         hash.Mix(Grid.ComputeTerrainHash().Value);
         hash.Mix((ulong)_commandsApplied);
+        hash.Mix(Focus?.CenterX ?? -1);
+        hash.Mix(Focus?.CenterY ?? -1);
+        hash.Mix(Focus?.Radius ?? -1);
 
         foreach (var household in Households.Households)
         {
@@ -239,6 +248,9 @@ public sealed class Simulation
                 break;
             case FoundFirm foundFirm:
                 FoundFirm(foundFirm);
+                break;
+            case SetCameraFocus setFocus:
+                Focus = new LodFocus(setFocus.X, setFocus.Y, setFocus.Radius);
                 break;
             default:
                 throw new NotSupportedException($"unknown command: {command.GetType()}");

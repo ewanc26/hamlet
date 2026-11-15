@@ -145,6 +145,14 @@ public partial class SimHost : Node
             case "place_road":
                 _commands.Enqueue(new PlaceRoad { X = (int)command["x"], Y = (int)command["y"] });
                 break;
+            case "set_focus":
+                _commands.Enqueue(new SetCameraFocus
+                {
+                    X = (int)command["x"],
+                    Y = (int)command["y"],
+                    Radius = (int)command["radius"],
+                });
+                break;
         }
     }
 

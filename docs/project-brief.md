@@ -239,7 +239,7 @@ Shipped precedent: Cities: Skylines II grounds its citizens in a per-citizen **L
 | **Statistical** | off camera, stable routine | agent reduced to a schedule record; daily outcomes sampled from distributions; resurrected to full tier on any inspection or event |
 | **Settlement** | non-focus settlements (region/nation stages) | the whole settlement runs as one statistical unit (population, economy, sentiment sampled daily); individual citizens persist as records and are instantiated on demand |
 
-Time-slicing is uniform: no agent ever updates everything every tick; work is spread across buckets so tick cost is flat and predictable. The settlement tier is the same idea one level up — and because every citizen record persists, nobody is ever "fake": a household that migrates arrives in its new settlement with relationships, memories, and opinions intact.
+Time-slicing is uniform: no agent ever updates everything every tick; work is spread across buckets so tick cost is flat and predictable. The camera focus square reaches the sim as a `SetCameraFocus` command (never a frame-clock read), so tier assignment is itself deterministic; off-camera citizens keep full per-tick needs and staggered replanning but jump straight to their plan's anchor instead of per-tick navigation. The settlement tier is the same idea one level up — and because every citizen record persists, nobody is ever "fake": a household that migrates arrives in its new settlement with relationships, memories, and opinions intact.
 
 ### 6.6 Citizen Bodies — Stage-Dependent Aggregation
 

@@ -6,7 +6,8 @@ namespace Hamlet.Sim.Agent;
 /// Executes one plan step per tick (§6.2): travel one tile, or perform the
 /// activity. Travel follows the road route compiled by <see cref="IntentPlanner"/>
 /// when one exists; with no connecting road it falls back to the direct
-/// straight-line walk, so road-less worlds still run (§7.2).
+/// straight-line walk, so road-less worlds still run (§7.2). Off-camera
+/// (standard LOD, §6.5) travellers jump straight to the target instead.
 /// </summary>
 public static class ActivityRunner
 {
@@ -16,7 +17,8 @@ public static class ActivityRunner
         Clock clock,
         DaySchedule schedule,
         NeedRules rules,
-        int gridSize)
+        int gridSize,
+        bool coarse = false)
     {
         var plan = citizen.Plan;
         if (plan.IsNone)
@@ -26,6 +28,16 @@ public static class ActivityRunner
         {
             if (citizen.X == plan.TargetX && citizen.Y == plan.TargetY)
             {
+                citizen.Route.Clear();
+                citizen.Plan = plan.StartPerforming();
+                return false;
+            }
+            if (coarse)
+            {
+                // Standard LOD (§6.5): off-camera citizens skip per-tick nav and
+                // jump straight to the plan's anchor point.
+                citizen.X = plan.TargetX;
+                citizen.Y = plan.TargetY;
                 citizen.Route.Clear();
                 citizen.Plan = plan.StartPerforming();
                 return false;

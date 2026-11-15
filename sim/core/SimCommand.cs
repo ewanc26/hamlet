@@ -36,3 +36,15 @@ public sealed class FoundFirm : ISimCommand
     public int Y { get; init; }
     public long OpeningCash { get; init; }
 }
+
+/// <summary>
+/// Move the camera focus square: citizens inside run full LOD, outside run
+/// standard LOD (coarse movement) (§6.5). A command, so focus changes are part
+/// of the deterministic stream.
+/// </summary>
+public sealed class SetCameraFocus : ISimCommand
+{
+    public int X { get; init; }
+    public int Y { get; init; }
+    public int Radius { get; init; }
+}
