@@ -21,6 +21,12 @@ document lives in [docs/project-brief.md](docs/project-brief.md).
 Rules: one C# Node only (`SimHost`); cross-language calls happen only at tick
 boundaries; the sim never touches the scene tree. Full contract in the brief, §4.
 
+## Roadmap
+
+The milestone ladder M0–M6 — versions, exit criteria, and where we are — lives
+in [ROADMAP.md](ROADMAP.md). Art direction: diorama minimalism,
+flat-shaded, green ([docs/art-direction.md](docs/art-direction.md)).
+
 ## File architecture
 
 Every file is an atom — one concept per file — at `<scope>/[subscope/]<atom>.<ext>`:
