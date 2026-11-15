@@ -68,6 +68,31 @@ coverage, relationship strength, …) is an integer on the shared 0–100
 scale, clamped on write. Exempt: counts, money, IDs (natural units) and
 categorical fields (stay categorical). Never introduce a second scale.
 
+## Commits — the atomic pattern applies here too
+
+- One commit = one atom or one coherent concept. A new atom and its tests
+  are one commit; a fix to one atom is one commit; a rename series is one
+  commit per atom. Never mix unrelated changes — split the work instead.
+- Subject line: imperative, and it names the atom or scope it touches.
+  The body explains why the change is needed.
+- Every commit builds and leaves the test suite green on its own. No
+  "fix the last commit" follow-ups — amend or rebase before pushing.
+
+## Versioning — SemVer, one atom of truth
+
+- The version lives in one place: `Directory.Build.props` (`<Version>`).
+  Every project inherits it; no project sets its own version.
+- Tags are `vX.Y.Z` (e.g. `v0.1.0`). Pre-1.0: MINOR bumps per milestone
+  (M0 → 0.1.0, M1 → 0.2.0, …), PATCH for fixes within a milestone;
+  breaking changes also bump MINOR until 1.0.
+- A version bump and its `CHANGELOG.md` entry ship in the same commit.
+  No bump without an entry; no entry without a bump.
+- Releasing is automated: the `release` workflow tests, then tags and
+  publishes a GitHub release whenever the version atom changes on `main`.
+  Do not tag by hand.
+- Once saves exist, their headers and content schemas record the sim
+  version that wrote them; a bump that changes either is breaking.
+
 ## Workflow — what you must do
 
 ```sh
@@ -82,7 +107,6 @@ dotnet run --project headless -- 12345 10000 128 # smoke run must complete
 - Keep the design document in sync: if a decision changes, update
   `docs/project-brief.md` (and the canvas it mirrors) in the same PR.
 - Never reformat, rename, or "clean up" atoms you were not asked to touch.
-- Commit messages: imperative subject line, body explains why.
 
 ## What not to do
 
@@ -93,3 +117,5 @@ dotnet run --project headless -- 12345 10000 128 # smoke run must complete
   `LedgerBook`; conservation is asserted in tests (§3.2).
 - No per-frame allocations or signal traffic in the tick loop (§7.1).
 - Do not delete or weaken tests, CI steps, or the determinism gate.
+- Do not tag releases by hand or version projects individually — the
+  version atom and the release workflow own both.
