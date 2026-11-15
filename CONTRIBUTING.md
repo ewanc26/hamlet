@@ -30,6 +30,21 @@ Every file is an atom: `<scope>/[subscope/]<atom>.<ext>`.
 - Tick loops allocate nothing: pool or pre-size.
 - Every PR adds or updates a test; CI byte-compares runs from the same seed.
 
+## Commits
+
+One commit = one atom or one coherent concept (a new atom plus its tests,
+one atom's fix, one rename). The subject is imperative and names the atom
+or scope; the body explains why. Every commit builds and leaves the suite
+green on its own — amend or rebase instead of "fix the last commit".
+
+## Versioning (SemVer)
+
+The version lives in `Directory.Build.props` — the single source of truth.
+Pre-1.0: MINOR per milestone, PATCH for fixes. A bump ships with its
+matching `CHANGELOG.md` entry in the same commit; CI then tags and publishes
+`vX.Y.Z` automatically when the version atom changes on `main`. Do not tag
+by hand or version projects individually.
+
 ## Tests
 
 ```sh
