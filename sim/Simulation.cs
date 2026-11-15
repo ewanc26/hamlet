@@ -17,6 +17,8 @@ public sealed class Simulation
     public Clock Clock { get; } = new();
     public DeterministicRandom Random { get; }
     public WorldGrid Grid { get; }
+    public Pathfinder Pathfinder { get; }
+    public Congestion Congestion { get; }
     public LedgerBook LedgerBook { get; } = new();
     public AgentBodies Bodies { get; } = new();
     public HouseholdBook Households { get; } = new();
@@ -31,6 +33,8 @@ public sealed class Simulation
     {
         Random = new DeterministicRandom(seed);
         Grid = new WorldGrid(gridSize);
+        Pathfinder = new Pathfinder(Grid);
+        Congestion = new Congestion(gridSize);
         TerrainGen.Generate(Grid, Random);
     }
 
@@ -43,6 +47,8 @@ public sealed class Simulation
     /// <summary>One fixed tick: drain commands, advance time, run agents, emit batched events.</summary>
     public void TickOnce()
     {
+        RebuildCongestion();
+
         while (_inbox.Count > 0)
         {
             var command = _inbox.Dequeue();
@@ -55,6 +61,18 @@ public sealed class Simulation
 
         foreach (var citizen in Bodies.Citizens)
             TickCitizen(citizen);
+    }
+
+    /// <summary>
+    /// Rebuild road load from the fixed citizen order (§7.2): the traffic
+    /// picture is a pure function of positions, so routing stays replayable.
+    /// </summary>
+    private void RebuildCongestion()
+    {
+        Congestion.Reset();
+        foreach (var citizen in Bodies.Citizens)
+            if (citizen.IsAlive && Grid.IsRoadAt(citizen.X, citizen.Y))
+                Congestion.Add(citizen.X, citizen.Y);
     }
 
     private void TickCitizen(Citizen citizen)
@@ -71,7 +89,7 @@ public sealed class Simulation
         if ((Clock.Tick + citizen.Id) % ReplanInterval == 0 || InCrisis(citizen))
             Replan(citizen, household, allowHysteresis: true);
 
-        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules))
+        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules, Grid.Size))
             Replan(citizen, household, allowHysteresis: false);
 
         if (citizen.Plan.Intent == previous)
@@ -110,7 +128,7 @@ public sealed class Simulation
                 return;
         }
 
-        citizen.Plan = IntentPlanner.Compile(best, citizen, household);
+        citizen.Plan = IntentPlanner.Compile(best, citizen, household, Pathfinder, Congestion);
     }
 
     /// <summary>Rolls up everything that defines the world into one fingerprint (§7.6).</summary>
@@ -154,6 +172,11 @@ public sealed class Simulation
             hash.Mix(plan.TargetX);
             hash.Mix(plan.TargetY);
             hash.Mix(plan.PhaseTicks);
+
+            hash.Mix(citizen.Route.Length);
+            hash.Mix(citizen.Route.Cursor);
+            for (var step = citizen.Route.Cursor; step < citizen.Route.Length; step++)
+                hash.Mix(citizen.Route.TileAt(step));
         }
 
         return hash;
@@ -189,7 +212,7 @@ public sealed class Simulation
             citizen.X = household.HomeX;
             citizen.Y = household.HomeY;
             citizen.Plan = IntentPlanner.Compile(
-                UtilityScorer.Best(citizen, household, Clock, Schedule), citizen, household);
+                UtilityScorer.Best(citizen, household, Clock, Schedule), citizen, household, Pathfinder, Congestion);
             _outbox.Add(new SimEvent
             {
                 Kind = SimEventKind.ActivityChanged,

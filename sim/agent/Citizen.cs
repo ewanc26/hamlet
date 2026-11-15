@@ -1,3 +1,5 @@
+using Hamlet.Sim.City;
+
 namespace Hamlet.Sim.Agent;
 
 /// <summary>
@@ -17,6 +19,12 @@ public sealed class Citizen
     public int X { get; set; }
     public int Y { get; set; }
     public Plan Plan { get; set; }
+
+    /// <summary>
+    /// The road route being walked (§7.2). Empty means "walk the direct line":
+    /// either no road connects the ends, or the citizen is not on the graph.
+    /// </summary>
+    public RoadPath Route { get; } = new();
     public long LastWorkDay { get; set; } = -1;
 
     /// <summary>The presentation view of this citizen, captured at a tick boundary (§4, rule 3).</summary>

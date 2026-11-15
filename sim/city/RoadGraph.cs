@@ -2,8 +2,9 @@ namespace Hamlet.Sim.City;
 
 /// <summary>
 /// Road topology over the grid: a tile is a junction when its road-neighbour
-/// count is anything but 2. The pathfinding and traffic atoms (M1+) consume
-/// junctions, never raw tiles, so graphs stay small at every scale (§6.3).
+/// count is anything but 2. The hierarchical router (M2 target) consumes
+/// junctions, never raw tiles, so graphs stay small at every scale (§6.3);
+/// the first-cut router walks the road tiles themselves.
 /// </summary>
 public static class RoadGraph
 {

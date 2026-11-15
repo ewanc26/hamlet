@@ -4,13 +4,19 @@ namespace Hamlet.Sim.Agent;
 
 /// <summary>
 /// Executes one plan step per tick (§6.2): travel one tile, or perform the
-/// activity. M1 movement is a deterministic straight-line walk at grid
-/// granularity — road-graph pathfinding and congestion are M2. Returns true
-/// when the plan completes so the planner can pick the next one.
+/// activity. Travel follows the road route compiled by <see cref="IntentPlanner"/>
+/// when one exists; with no connecting road it falls back to the direct
+/// straight-line walk, so road-less worlds still run (§7.2).
 /// </summary>
 public static class ActivityRunner
 {
-    public static bool Tick(Citizen citizen, Household household, Clock clock, DaySchedule schedule, NeedRules rules)
+    public static bool Tick(
+        Citizen citizen,
+        Household household,
+        Clock clock,
+        DaySchedule schedule,
+        NeedRules rules,
+        int gridSize)
     {
         var plan = citizen.Plan;
         if (plan.IsNone)
@@ -20,14 +26,37 @@ public static class ActivityRunner
         {
             if (citizen.X == plan.TargetX && citizen.Y == plan.TargetY)
             {
+                citizen.Route.Clear();
                 citizen.Plan = plan.StartPerforming();
                 return false;
             }
-            StepToward(citizen, plan.TargetX, plan.TargetY);
+            StepToward(citizen, plan, gridSize);
             return false;
         }
 
         return Perform(citizen, household, clock, schedule, rules, plan);
+    }
+
+    /// <summary>Walk one route tile; a stale or absent route walks the direct line.</summary>
+    private static void StepToward(Citizen citizen, Plan plan, int gridSize)
+    {
+        var route = citizen.Route;
+        if (route.HasNext)
+        {
+            var tile = route.NextTile;
+            var nextX = tile % gridSize;
+            var nextY = tile / gridSize;
+            if (Math.Abs(nextX - citizen.X) + Math.Abs(nextY - citizen.Y) == 1)
+            {
+                citizen.X = nextX;
+                citizen.Y = nextY;
+                route.Advance();
+                return;
+            }
+            route.Clear(); // the world changed under the route: walk directly this tick
+        }
+
+        StepToward(citizen, plan.TargetX, plan.TargetY);
     }
 
     private static void StepToward(Citizen citizen, int targetX, int targetY)
@@ -83,6 +112,7 @@ public static class ActivityRunner
             }
         }
 
+        citizen.Route.Clear();
         citizen.Plan = default;
         return true;
     }

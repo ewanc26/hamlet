@@ -1,15 +1,27 @@
+using Hamlet.Sim.City;
+
 namespace Hamlet.Sim.Agent;
 
 /// <summary>
 /// Compiles a winning intent into the primitive plan the runner executes
-/// (§6.2). M1 plans are the fixed travel → perform pair; the compiler checks
-/// the one precondition that matters now — whether the citizen is already
-/// standing on the target.
+/// (§6.2). M1 plans are the fixed travel → perform pair; M2 adds the road
+/// route: when a pathfinder is supplied, travel plans carry the cheapest
+/// congestion-aware route, and a world with no connecting road falls back to
+/// the direct walk.
 /// </summary>
 public static class IntentPlanner
 {
-    public static Plan Compile(ActivityKind intent, Citizen citizen, Household household)
+    public static Plan Compile(ActivityKind intent, Citizen citizen, Household household) =>
+        Compile(intent, citizen, household, pathfinder: null, congestion: null);
+
+    public static Plan Compile(
+        ActivityKind intent,
+        Citizen citizen,
+        Household household,
+        Pathfinder? pathfinder,
+        Congestion? congestion)
     {
+        citizen.Route.Clear();
         if (intent == ActivityKind.None)
             return default;
 
@@ -17,6 +29,10 @@ public static class IntentPlanner
         var phase = citizen.X == targetX && citizen.Y == targetY
             ? PlanPhase.Perform
             : PlanPhase.Travel;
+
+        if (phase == PlanPhase.Travel && pathfinder is not null && congestion is not null)
+            pathfinder.Find(citizen.X, citizen.Y, targetX, targetY, congestion, citizen.Route);
+
         return new Plan
         {
             Intent = intent,

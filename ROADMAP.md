@@ -8,8 +8,10 @@ The milestone ladder from the design document ([docs/project-brief.md](docs/proj
 trait-modulated intervals, utility scoring picks sleep/eat/work, and the greybox
 renders the terrain, road strip, home, workplace, and citizen from tick-boundary
 packets. The in-engine budget check also clears M0's last criterion: 1,001
-road-walking bodies at 120 fps. **M2 — A Living Street** is next: jobs, shops,
-money, pathfinding, LOD tier 2, and the first household body.
+road-walking bodies at 120 fps. **M2 — A Living Street** is in progress: citizens
+now route over the road graph with congestion-weighted A*, detouring around
+jams instead of walking the straight line. Jobs, shops, money, LOD tier 2, and
+the first household body remain.
 
 ## milestones
 
@@ -27,8 +29,9 @@ money, pathfinding, LOD tier 2, and the first household body.
 
 - **Jobs and shops as real entities**: firms with accounts, shifts, wages, and a
   pantry that shops refill — the M1 household grows a real local economy.
-- **Pathfinding on the road graph**: A* over junctions with congestion-weighted
-  edges, replacing the M1 straight-line walk; citizens route around jams.
+- **Pathfinding on the road graph**: A* with congestion-weighted edges,
+  replacing the M1 straight-line walk — **landed** (tile-level first cut; the
+  junction/flow-field hierarchy follows); citizens route around jams.
 - **LOD tier 2**: off-camera citizens replan on the staggered 60-tick bucket and
   move coarsely between anchors.
 - **Household bodies**: compatible family trips merge into one body with mass,
