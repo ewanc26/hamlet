@@ -9,7 +9,10 @@ namespace Hamlet.Sim.Economy;
 public sealed class Shop
 {
     public const int PricePerMeal = 5;
+    public const int WholesalePricePerMeal = 3;
     public const int DefaultStock = 60;
+    public const int RestockBatch = 120;
+    public const int LowStockAt = 40;
 
     private readonly LedgerBook _ledgers;
 
@@ -29,7 +32,30 @@ public sealed class Shop
     public Ledger Ledger { get; }
     public int MealsInStock { get; private set; }
 
+    /// <summary>The firm this shop buys wholesale stock from.</summary>
+    public Firm? Supplier { get; set; }
+
     public int CostOf(int meals) => Math.Max(0, meals) * PricePerMeal;
+
+    /// <summary>
+    /// Buy up to <paramref name="wanted"/> meals from the supplier at the
+    /// wholesale price. Returns false when nothing can be bought; the shop
+    /// ledger pays the firm, so restocking is a transfer too.
+    /// </summary>
+    public bool TryRestock(int wanted, out int bought)
+    {
+        bought = 0;
+        if (Supplier is null)
+            return false;
+        var affordable = (int)(Ledger.Balance / WholesalePricePerMeal);
+        bought = Math.Min(Math.Max(0, wanted), affordable);
+        if (bought <= 0)
+            return false;
+
+        _ledgers.Transfer(Ledger, Supplier.Ledger, bought * WholesalePricePerMeal);
+        MealsInStock += bought;
+        return true;
+    }
 
     /// <summary>
     /// Sell up to <paramref name="wanted"/> meals to <paramref name="wallet"/>.

@@ -29,8 +29,8 @@ the first household body remain.
 
 - **Jobs and shops as real entities**: shops are real counters with meal stock
   and their own ledgers — households walk to the shop and buy groceries from a
-  wallet; firms are real employers that pay each completed shift from a real
-  payroll ledger.
+  wallet; shops order wholesale stock from a supplier firm each morning. Firms
+  are real employers that pay each completed shift from a real payroll ledger.
 - **Pathfinding on the road graph**: A* with congestion-weighted edges,
   replacing the M1 straight-line walk — **landed** (tile-level first cut; the
   junction/flow-field hierarchy follows); citizens route around jams.

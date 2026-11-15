@@ -19,7 +19,7 @@ for (var i = 0; i < 100; i++)
 
 // M1: one settler household, home on the strip, job site at the far end.
 // M2: a shop near home keeps the pantry stocked; the firm pays the shift.
-simulation.Enqueue(new FoundShop { X = 12, Y = 7 });
+simulation.Enqueue(new FoundShop { X = 12, Y = 7, OpeningCash = 600 });
 simulation.Enqueue(new FoundFirm { X = 60, Y = 7, OpeningCash = 3_000 });
 simulation.Enqueue(new FoundHousehold { HomeX = 10, HomeY = 7, WorkX = 60, WorkY = 7, Members = 1 });
 

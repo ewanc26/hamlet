@@ -13,6 +13,7 @@ namespace Hamlet.Sim;
 public sealed class Simulation
 {
     private const int ReplanInterval = 60; // an hourly reconsideration (§6.2)
+    private const int RestockHour = 6;     // shops order wholesale stock before opening
 
     public Clock Clock { get; } = new();
     public DeterministicRandom Random { get; }
@@ -65,8 +66,19 @@ public sealed class Simulation
         Clock.Advance();
         _outbox.Add(new SimEvent { Kind = SimEventKind.TickAdvanced, Tick = Clock.Tick });
 
+        if (Clock.Hour == RestockHour && Clock.MinuteOfDay == 0)
+            RestockShops();
+
         foreach (var citizen in Bodies.Citizens)
             TickCitizen(citizen);
+    }
+
+    /// <summary>Shops order from their supplier once a day, before the doors open (§7.3).</summary>
+    private void RestockShops()
+    {
+        foreach (var shop in Shops.Shops)
+            if (shop.MealsInStock < Shop.LowStockAt)
+                shop.TryRestock(Shop.RestockBatch, out _);
     }
 
     /// <summary>
@@ -166,6 +178,7 @@ public sealed class Simulation
             hash.Mix(shop.Y);
             hash.Mix(shop.MealsInStock);
             hash.Mix(shop.Ledger.Balance);
+            hash.Mix(shop.Supplier?.Id ?? 0);
         }
 
         foreach (var firm in Firms.Firms)
@@ -276,6 +289,7 @@ public sealed class Simulation
             throw new ArgumentOutOfRangeException(nameof(command), "shop coordinates must be inside the world");
 
         var shop = Shops.Found(command.X, command.Y, command.Meals, command.OpeningCash);
+        shop.Supplier = Firms.Nearest(shop.X, shop.Y);
         foreach (var household in Households.Households)
             household.CornerShop ??= Shops.Nearest(household.HomeX, household.HomeY);
 
@@ -296,6 +310,8 @@ public sealed class Simulation
         var firm = Firms.Found(command.X, command.Y, command.OpeningCash);
         foreach (var household in Households.Households)
             household.Employer ??= Firms.Nearest(household.WorkX, household.WorkY);
+        foreach (var shop in Shops.Shops)
+            shop.Supplier ??= Firms.Nearest(shop.X, shop.Y);
 
         _outbox.Add(new SimEvent
         {

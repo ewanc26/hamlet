@@ -80,7 +80,7 @@ public partial class SimHost : Node
             _simulation.Enqueue(new PlaceRoad { X = site.X + i, Y = site.Y });
         if (!_shopFounded)
         {
-            _simulation.Enqueue(new FoundShop { X = site.X + 2, Y = site.Y });
+            _simulation.Enqueue(new FoundShop { X = site.X + 2, Y = site.Y, OpeningCash = 600 });
             _shopFounded = true;
         }
         if (!_firmFounded)

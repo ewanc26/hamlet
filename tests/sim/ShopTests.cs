@@ -89,4 +89,48 @@ public class ShopTests
 
         Assert.Same(first, shops.Nearest(3, 3)); // both four tiles away: id order decides
     }
+
+    [Fact]
+    public void RestockingMovesMoneyToTheSupplierAndRaisesStock()
+    {
+        var ledgers = new LedgerBook();
+        var shops = new ShopBook(ledgers);
+        var firms = new FirmBook(ledgers);
+        var supplier = firms.Found(6, 6, openingCash: 0);
+        var shop = shops.Found(4, 4, stock: 10, openingCash: 600);
+        shop.Supplier = supplier;
+        var openingMoney = ledgers.TotalMoney;
+
+        Assert.True(shop.TryRestock(Shop.RestockBatch, out var bought));
+
+        Assert.Equal(Shop.RestockBatch, bought);
+        Assert.Equal(10 + Shop.RestockBatch, shop.MealsInStock);
+        Assert.Equal(600 - Shop.RestockBatch * Shop.WholesalePricePerMeal, shop.Ledger.Balance);
+        Assert.Equal(Shop.RestockBatch * Shop.WholesalePricePerMeal, supplier.Ledger.Balance);
+        Assert.Equal(openingMoney, ledgers.TotalMoney);
+    }
+
+    [Fact]
+    public void AnUnfundedShopBuysOnlyWhatItCanAfford()
+    {
+        var ledgers = new LedgerBook();
+        var supplier = new FirmBook(ledgers).Found(6, 6, openingCash: 0);
+        var shop = new ShopBook(ledgers).Found(4, 4, stock: 0, openingCash: 7);
+        shop.Supplier = supplier;
+
+        Assert.True(shop.TryRestock(Shop.RestockBatch, out var bought));
+
+        Assert.Equal(7 / Shop.WholesalePricePerMeal, bought); // two meals at wholesale
+        Assert.Equal(bought, shop.MealsInStock);
+    }
+
+    [Fact]
+    public void AShopWithNoSupplierCannotRestock()
+    {
+        var shop = new ShopBook(new LedgerBook()).Found(4, 4, stock: 0, openingCash: 300);
+
+        Assert.False(shop.TryRestock(Shop.RestockBatch, out var bought));
+        Assert.Equal(0, bought);
+        Assert.Equal(0, shop.MealsInStock);
+    }
 }
