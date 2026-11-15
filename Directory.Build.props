@@ -4,7 +4,7 @@
        Bump <Version> and CI tags + publishes the release; see AGENTS.md
        (Versioning) and CHANGELOG.md. -->
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
 
 </Project>

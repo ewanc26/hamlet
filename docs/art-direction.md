@@ -51,8 +51,10 @@ mockup; the design document is `docs/project-brief.md` §9.
 
 ## Pipeline
 
-- **Greybox:** Kenney's CC0 city-builder kit (Godot-native) — placeholder
-  geometry while the presentation plumbing lands.
+- **Greybox:** the M1 in-engine greybox is built from procedural boxes in
+  GDScript (`ui/terrain_view.gd`, `ui/building_view.gd`) so the presentation
+  plumbing could land without an asset dependency. Kenney's CC0 city-builder
+  kit — Godot-native — replaces the boxes once M2 adds shops and firms.
 - **Bespoke:** a small Blender kit — walls, pitched roofs, chimneys, trees,
   props — exported as glTF with flat shading; building variants are content
   atoms (JSON) + material/prop permutations.
