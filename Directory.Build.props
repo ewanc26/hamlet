@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- The version atom: the single source of truth for the Hamlet version.
+       Bump <Version> and CI tags + publishes the release; see AGENTS.md
+       (Versioning) and CHANGELOG.md. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+</Project>
