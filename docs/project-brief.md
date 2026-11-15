@@ -324,7 +324,7 @@ Hard engineering rules: the C# tick loop is allocation-free (pooled objects, pre
 
 ## 9. Art & UX Direction
 
-- Stylised low-poly 3D (or 2.5D) with readable silhouettes; citizens as simple capsule+hat rigs with walk/carry idles.
+- **Art direction (locked, 15 Nov 2026):** "diorama minimalism" — flat-shaded 3D low-poly with hard normals, no textures, one sun + warm hemisphere ambient, gradient sky, and a ≤15-colour **green-forward palette** (Ewan prefers lush greens; shading variant delegated to review: flat-shaded lit, over unlit vertex colour and toon). Terrain colour bands map directly from the quantised 0–100 terrain layers, so identical worlds render identically. Full research and palette v1 live in the *Hamlet Art Direction* canvas; the visual reference is the *Hamlet Style Target* mockup; repo rules are codified in `docs/art-direction.md`. Greybox with Kenney's CC0 city-builder kit; bespoke kit after the palette locks.
 - **Overlay-first UX:** land value, traffic, needs, safety, and relationship heatmaps are first-class tools.
 - Citizen inspector panel: click any agent → their needs, plan, memories, friends (as a mini graph), and opinion of your governance — all values shown as 0–100 bars, consistent with every overlay.
 - **Accessibility from day one** — every 0–100 bar is paired with text, not colour alone; colour-blind-safe palettes; full UI scaling; and screen-reader labelling via the engine's AccessKit-based support, shipped experimentally since Godot 4.5 ([Godot 4.5 release notes](https://godotengine.org/releases/4.5/)).
