@@ -21,6 +21,7 @@ public sealed class Simulation
     public Congestion Congestion { get; }
     public LedgerBook LedgerBook { get; } = new();
     public ShopBook Shops { get; }
+    public FirmBook Firms { get; }
     public AgentBodies Bodies { get; } = new();
     public HouseholdBook Households { get; } = new();
     public NeedRules Rules { get; } = NeedRules.Default;
@@ -39,6 +40,7 @@ public sealed class Simulation
         Pathfinder = new Pathfinder(Grid);
         Congestion = new Congestion(gridSize);
         Shops = new ShopBook(LedgerBook);
+        Firms = new FirmBook(LedgerBook);
         TerrainGen.Generate(Grid, Random);
     }
 
@@ -154,6 +156,7 @@ public sealed class Simulation
             hash.Mix(household.MealsStocked);
             hash.Mix(household.Wallet?.Balance ?? 0);
             hash.Mix(household.CornerShop?.Id ?? 0);
+            hash.Mix(household.Employer?.Id ?? 0);
         }
 
         foreach (var shop in Shops.Shops)
@@ -163,6 +166,14 @@ public sealed class Simulation
             hash.Mix(shop.Y);
             hash.Mix(shop.MealsInStock);
             hash.Mix(shop.Ledger.Balance);
+        }
+
+        foreach (var firm in Firms.Firms)
+        {
+            hash.Mix(firm.Id);
+            hash.Mix(firm.X);
+            hash.Mix(firm.Y);
+            hash.Mix(firm.Ledger.Balance);
         }
 
         foreach (var citizen in Bodies.Citizens)
@@ -211,6 +222,9 @@ public sealed class Simulation
             case FoundShop foundShop:
                 FoundShop(foundShop);
                 break;
+            case FoundFirm foundFirm:
+                FoundFirm(foundFirm);
+                break;
             default:
                 throw new NotSupportedException($"unknown command: {command.GetType()}");
         }
@@ -225,6 +239,7 @@ public sealed class Simulation
             command.HomeX, command.HomeY, command.WorkX, command.WorkY, command.Meals);
         household.Wallet = LedgerBook.OpenLedger(HouseholdOpeningCash);
         household.CornerShop = Shops.Nearest(household.HomeX, household.HomeY);
+        household.Employer = Firms.Nearest(household.WorkX, household.WorkY);
         var members = Math.Max(1, command.Members);
         for (var i = 0; i < members; i++)
         {
@@ -270,6 +285,24 @@ public sealed class Simulation
             Tick = Clock.Tick,
             X = shop.X,
             Y = shop.Y,
+        });
+    }
+
+    private void FoundFirm(FoundFirm command)
+    {
+        if (!Grid.InBounds(command.X, command.Y))
+            throw new ArgumentOutOfRangeException(nameof(command), "firm coordinates must be inside the world");
+
+        var firm = Firms.Found(command.X, command.Y, command.OpeningCash);
+        foreach (var household in Households.Households)
+            household.Employer ??= Firms.Nearest(household.WorkX, household.WorkY);
+
+        _outbox.Add(new SimEvent
+        {
+            Kind = SimEventKind.FirmFounded,
+            Tick = Clock.Tick,
+            X = firm.X,
+            Y = firm.Y,
         });
     }
 }

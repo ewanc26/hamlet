@@ -37,6 +37,7 @@ public partial class SimHost : Node
     private TerrainSnapshot _terrain = null!;
     private (int X, int Y) _site;
     private bool _shopFounded;
+    private bool _firmFounded;
     private readonly ConcurrentQueue<ISimCommand> _commands = new();
     private readonly ConcurrentQueue<Frame> _frames = new();
     private readonly List<CitizenSnapshot> _citizenBuffer = new();
@@ -81,6 +82,11 @@ public partial class SimHost : Node
         {
             _simulation.Enqueue(new FoundShop { X = site.X + 2, Y = site.Y });
             _shopFounded = true;
+        }
+        if (!_firmFounded)
+        {
+            _simulation.Enqueue(new FoundFirm { X = site.X + GreyboxCommuteTiles, Y = site.Y, OpeningCash = 3_000 });
+            _firmFounded = true;
         }
         _simulation.Enqueue(new FoundHousehold
         {

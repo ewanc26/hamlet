@@ -24,6 +24,9 @@ public sealed class Household
     /// <summary>The shop this household walks to when the pantry runs low.</summary>
     public Shop? CornerShop { get; set; }
 
+    /// <summary>The employer that pays this household's shifts.</summary>
+    public Firm? Employer { get; set; }
+
     public Household(long id, int homeX, int homeY, int workX, int workY, int meals)
     {
         Id = id;
@@ -56,6 +59,10 @@ public sealed class Household
         MealsStocked += sold;
         return true;
     }
+
+    /// <summary>Collect one shift's wage from the employer; returns what was paid.</summary>
+    public long CollectWage() =>
+        Wallet is null || Employer is null ? 0 : Employer.PayShift(Wallet);
 
     /// <summary>The presentation view of this household, captured at a tick boundary (§4, rule 3).</summary>
     public HouseholdSnapshot Snapshot() => new(Id, HomeX, HomeY, WorkX, WorkY, MealsStocked);

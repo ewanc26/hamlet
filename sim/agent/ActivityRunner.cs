@@ -108,6 +108,7 @@ public static class ActivityRunner
                     return false;
                 }
                 citizen.LastWorkDay = clock.Day;
+                household.CollectWage();
                 break;
             }
 

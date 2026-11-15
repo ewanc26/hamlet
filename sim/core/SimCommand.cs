@@ -28,3 +28,11 @@ public sealed class FoundShop : ISimCommand
     public int Meals { get; init; } = Economy.Shop.DefaultStock;
     public long OpeningCash { get; init; }
 }
+
+/// <summary>Found an employer with a workplace and a payroll ledger (§7.3).</summary>
+public sealed class FoundFirm : ISimCommand
+{
+    public int X { get; init; }
+    public int Y { get; init; }
+    public long OpeningCash { get; init; }
+}

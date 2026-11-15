@@ -7,6 +7,7 @@ public enum SimEventKind
     SettlementFounded,
     HouseholdFounded,
     ShopFounded,
+    FirmFounded,
     ActivityChanged,
 }
 
