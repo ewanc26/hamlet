@@ -9,6 +9,8 @@ public enum SimEventKind
     ShopFounded,
     FirmFounded,
     ActivityChanged,
+    HouseholdEmigrated,
+    RentCharged,
 }
 
 /// <summary>

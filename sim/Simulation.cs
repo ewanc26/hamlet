@@ -14,6 +14,9 @@ public sealed class Simulation
 {
     private const int ReplanInterval = 60; // an hourly reconsideration (§6.2)
     private const int RestockHour = 6;     // shops order wholesale stock before opening
+    private const int RentChargeInterval = 50; // charge rent every 50 ticks
+    private const int RentRatePerLandValuePoint = 1; // 1:1 land value → rent
+    private const int AffordabilityThreshold = 40; // rent ≥ this % of income triggers emigration
 
     public Clock Clock { get; } = new();
     public DeterministicRandom Random { get; }
@@ -21,8 +24,10 @@ public sealed class Simulation
     public Pathfinder Pathfinder { get; }
     public Congestion Congestion { get; }
     public LedgerBook LedgerBook { get; } = new();
+    public Ledger LandlordLedger { get; }
     public ShopBook Shops { get; }
     public FirmBook Firms { get; }
+    public LandValue LandValue { get; }
     public AgentBodies Bodies { get; } = new();
     public HouseholdBook Households { get; } = new();
     public NeedRules Rules { get; } = NeedRules.Default;
@@ -45,6 +50,8 @@ public sealed class Simulation
         Congestion = new Congestion(gridSize);
         Shops = new ShopBook(LedgerBook);
         Firms = new FirmBook(LedgerBook);
+        LandValue = new LandValue(Grid);
+        LandlordLedger = LedgerBook.OpenLedger();
         TerrainGen.Generate(Grid, Random);
     }
 
@@ -71,6 +78,29 @@ public sealed class Simulation
 
         if (Clock.Hour == RestockHour && Clock.Minute == 0)
             RestockShops();
+
+        // Charge rent every RentChargeInterval ticks (§7.3)
+        // Rent = land value point → 1 coin per interval
+        // Conservation: total money unchanged (rent transfers household → landlord ledger)
+        if (Clock.Tick % RentChargeInterval == 0)
+        {
+            foreach (var household in Households.Households)
+            {
+                if (household.Wallet is null) continue;
+                var homeX = household.HomeX;
+                var homeY = household.HomeY;
+                var lv = LandValue.ValueAt(homeX, homeY);
+                var rent = lv * RentRatePerLandValuePoint; // 1:1 land value → rent
+                // Transfer rent from household wallet to landlord ledger (conservation: not destroyed)
+                LedgerBook.Transfer(household.Wallet, LandlordLedger, rent);
+                _outbox.Add(new SimEvent
+                {
+                    Kind = SimEventKind.RentCharged,
+                    Tick = Clock.Tick,
+                    HouseholdId = household.Id,
+                });
+            }
+        }
 
         SplitBrokenBodies();
 
