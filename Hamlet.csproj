@@ -1,0 +1,26 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <!-- The Godot game assembly (C# side): SimHost, the single boundary Node,
+       plus any future presentation-facing C# atoms. The engine-agnostic sim
+       core is referenced, never compiled in here. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>Hamlet</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- sim/, tests/, headless/, docs/ are separate projects/dirs. -->
+    <Compile Remove="sim/**/*.cs" />
+    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="headless/**/*.cs" />
+    <Compile Remove="docs/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="sim/Hamlet.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

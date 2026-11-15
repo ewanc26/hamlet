@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sim:
+    name: simulation core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test (determinism gate, needs, bodies, ledger, clock, grid)
+        run: dotnet test tests/Hamlet.Sim.Tests.csproj -c Release
+
+      - name: Headless smoke run
+        run: dotnet run --project headless -c Release -- 12345 10000 128

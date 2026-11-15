@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hamlet.Sim: the engine-agnostic simulation core (§4 key rule).
+       No Godot namespaces are ever allowed in this project. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>Hamlet.Sim</AssemblyName>
+    <RootNamespace>Hamlet.Sim</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+{
+  "id": "building.bakery",
+  "name": "Bakery",
+  "kind": "commercial",
+  "jobs": 6,
+  "serves": { "need": "hunger", "quality": 72 },
+  "cost": 2400
+}
