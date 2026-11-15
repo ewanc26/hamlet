@@ -1,11 +1,58 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://ui/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://ui/terrain_view.gd" id="2_terrain"]
+[ext_resource type="Script" path="res://ui/road_view.gd" id="3_roads"]
+[ext_resource type="Script" path="res://ui/building_view.gd" id="4_buildings"]
+[ext_resource type="Script" path="res://ui/citizen_view.gd" id="5_citizens"]
+[ext_resource type="Script" path="res://ui/camera_rig.gd" id="6_camera"]
+[ext_resource type="Script" path="res://ui/hud.gd" id="7_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
+sky_top_color = Color(0.431, 0.608, 0.71, 1)
+sky_horizon_color = Color(0.906, 0.847, 0.659, 1)
+ground_bottom_color = Color(0.306, 0.506, 0.329, 1)
+ground_horizon_color = Color(0.906, 0.847, 0.659, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.851, 0.659, 1)
+ambient_light_energy = 0.3
+tonemap_mode = 2
+tonemap_exposure = 0.95
 
 [node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.614, 0, 0.7894, 0.6482, 0.5709, 0.5042, -0.4506, 0.8211, -0.3505, 0, 20, 0)
+light_color = Color(1, 0.945, 0.839, 1)
+light_energy = 0.9
+shadow_enabled = true
+directional_shadow_max_distance = 120.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+
+[node name="Terrain" type="MeshInstance3D" parent="."]
+script = ExtResource("2_terrain")
+
+[node name="Roads" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("3_roads")
+
+[node name="Buildings" type="Node3D" parent="."]
+script = ExtResource("4_buildings")
+
+[node name="Citizens" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("5_citizens")
 
 [node name="Camera" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.927184, 0.374607, 0, -0.374607, 0.927184, 0, 8, 12)
+script = ExtResource("6_camera")
 
 [node name="HUD" type="CanvasLayer" parent="."]
-script = ExtResource("1_hud")
+script = ExtResource("7_hud")

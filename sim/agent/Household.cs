@@ -34,6 +34,9 @@ public sealed class Household
         MealsStocked--;
         return true;
     }
+
+    /// <summary>The presentation view of this household, captured at a tick boundary (§4, rule 3).</summary>
+    public HouseholdSnapshot Snapshot() => new(Id, HomeX, HomeY, WorkX, WorkY, MealsStocked);
 }
 
 /// <summary>Owns every household; founding order fixes identity (§7.3).</summary>

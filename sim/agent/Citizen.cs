@@ -19,5 +19,14 @@ public sealed class Citizen
     public Plan Plan { get; set; }
     public long LastWorkDay { get; set; } = -1;
 
+    /// <summary>The presentation view of this citizen, captured at a tick boundary (§4, rule 3).</summary>
+    public CitizenSnapshot Snapshot() => new(
+        Id,
+        X,
+        Y,
+        Plan.Intent,
+        Needs[NeedKind.Hunger],
+        Needs[NeedKind.Energy]);
+
     public void Die() => IsAlive = false;
 }

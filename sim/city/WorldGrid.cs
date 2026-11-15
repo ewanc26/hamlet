@@ -56,6 +56,18 @@ public sealed class WorldGrid
         _layers[(int)layer][y * Size + x] = (byte)Math.Clamp(value, 0, 100);
     }
 
+    /// <summary>
+    /// Copy the static terrain for the presentation layer. Called at world
+    /// load, never per tick, so the allocation is not on the tick budget (§8).
+    /// </summary>
+    public TerrainSnapshot CaptureTerrain()
+    {
+        var layers = new byte[LayerCount][];
+        for (var layer = 0; layer < LayerCount; layer++)
+            layers[layer] = (byte[])_layers[layer].Clone();
+        return new TerrainSnapshot(Size, layers);
+    }
+
     public StateHash ComputeTerrainHash()
     {
         var hash = new StateHash();
