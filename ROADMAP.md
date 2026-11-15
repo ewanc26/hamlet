@@ -9,9 +9,13 @@ trait-modulated intervals, utility scoring picks sleep/eat/work, and the greybox
 renders the terrain, road strip, home, workplace, and citizen from tick-boundary
 packets. The in-engine budget check also clears M0's last criterion: 1,001
 road-walking bodies at 120 fps. **M2 — A Living Street** is in progress: citizens
-now route over the road graph with congestion-weighted A*, detouring around
-jams instead of walking the straight line. Jobs, shops, money, LOD tier 2, and
-the first household body remain.
+route over the road graph with congestion-weighted A*, detouring around
+jams instead of walking the straight line. Jobs, shops, and money are real
+entities now — firms pay shifts from payroll ledgers, households buy meal
+bundles from shop counters, and shops restock wholesale from a supplier firm
+each morning — and the stability gate is green: 100 citizens on one street
+stay fed and employed for 10 in-game days with no intervention, replaying
+bit-identically from the seed. LOD tier 2 and the first household body remain.
 
 ## milestones
 
@@ -27,18 +31,23 @@ the first household body remain.
 
 ## M2 detail — what lands next
 
-- **Jobs and shops as real entities**: shops are real counters with meal stock
-  and their own ledgers — households walk to the shop and buy groceries from a
-  wallet; shops order wholesale stock from a supplier firm each morning. Firms
-  are real employers that pay each completed shift from a real payroll ledger.
-- **Pathfinding on the road graph**: A* with congestion-weighted edges,
-  replacing the M1 straight-line walk — **landed** (tile-level first cut; the
-  junction/flow-field hierarchy follows); citizens route around jams.
+- **Jobs and shops as real entities** — **landed**: shops are real counters with
+  meal stock and their own ledgers — households walk to the shop and buy
+  groceries from a wallet; shops order wholesale stock from a supplier firm at
+  the top of each morning's restock hour. Firms are real employers that pay
+  each completed shift from a real payroll ledger. Money is conserved across
+  all ledgers (§7.3).
+- **Pathfinding on the road graph** — **landed** (tile-level first cut; the
+  junction/flow-field hierarchy follows): A* with congestion-weighted edges
+  replaces the M1 straight-line walk; citizens route around jams.
 - **LOD tier 2**: off-camera citizens replan on the staggered 60-tick bucket and
   move coarsely between anchors.
 - **Household bodies**: compatible family trips merge into one body with mass,
   and a merge → split → merge round trip must be lossless (property test).
-- **100 citizens, 10 in-game days, no intervention**: the stability gate.
+- **100 citizens, 10 in-game days, no intervention** — **landed as the
+  stability gate** (`TownStabilityTests`): no hunger crisis, ≥ 90% employed in
+  the last two days, every pantry stocked at the end, total money unchanged,
+  and the decade replays bit-identically from the seed.
 
 ## quality gates (every milestone)
 

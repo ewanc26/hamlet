@@ -66,7 +66,7 @@ public sealed class Simulation
         Clock.Advance();
         _outbox.Add(new SimEvent { Kind = SimEventKind.TickAdvanced, Tick = Clock.Tick });
 
-        if (Clock.Hour == RestockHour && Clock.MinuteOfDay == 0)
+        if (Clock.Hour == RestockHour && Clock.Minute == 0)
             RestockShops();
 
         foreach (var citizen in Bodies.Citizens)
@@ -135,9 +135,11 @@ public sealed class Simulation
 
         if (allowHysteresis && !current.IsNone && current.Intent != best)
         {
-            // Sleep is only interrupted by a need crisis: a moderate need at
-            // 3 a.m. is not worth waking for (§6.2 plan robustness).
-            if (current.Intent == ActivityKind.Sleep && Schedule.IsNight(Clock.Hour) && !InCrisis(citizen))
+            // Sleep at night is only interrupted by a need crisis or by hunger
+            // falling due (below the meal threshold): a moderate want at 3 a.m.
+            // is not worth waking for (§6.2 plan robustness).
+            if (current.Intent == ActivityKind.Sleep && Schedule.IsNight(Clock.Hour)
+                && !InCrisis(citizen) && citizen.Needs[NeedKind.Hunger] >= UtilityScorer.MealThreshold)
                 return;
 
             var currentScore = UtilityScorer.Score(current.Intent, citizen, household, Clock, Schedule);

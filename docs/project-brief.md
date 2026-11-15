@@ -187,11 +187,13 @@ Eight scalar needs on the shared 0–100 scale (§5.1), decayed per tick, restor
 
 Needs are *traits-modulated*: each citizen has randomised decay rates and weights (themselves expressed on the 0–100 scale) — a gregarious citizen weights Social high; an ambitious one weights career gains over leisure. This makes populations heterogeneous without per-citizen scripting.
 
+Crisis pre-empts comfort, continuously rather than by scripted thresholds: a citizen in hunger crisis never scores sleep or work (starvation beats both), work drive scales with satiety so the lunch crossover is smooth, and at night the sleep drive's floor drops once hunger falls below the meal threshold — a rested citizen sleeps through the night unless it is time to eat, so nobody sleeps into starvation.
+
 ### 6.2 Decision Layer — Utility GOAP
 
 A hybrid planner, evaluated per agent on a staggered schedule (each agent fully replans every ~60 ticks — an *hourly* reconsideration under the default clock of §7.1; ticks in between execute the current plan). Both halves are battle-tested patterns: utility scoring for choosing *what* to do across huge agent counts ([Dave Mark, *Building a Better Centaur: AI at Massive Scale*, GDC 2015](https://archive.org/details/GDC2015Mark)), and GOAP — A\* over actions with preconditions and effects — for compiling an intent into robust, re-plannable steps ([Jeff Orkin, *Three States and a Plan: The AI of F.E.A.R.*, GDC 2006](https://www.gdcvault.com/play/1013394/Three-States-and-a-Plan)):
 
-1. **Utility scoring** — generate candidate activities from context (`sleep`, `eat at home`, `eat out`, `work`, `visit friend`, `go to park`, `shop`, `see doctor`…). Each candidate scores `urgency(need) × trait_weight × availability(context) − cost(distance, money, time)`.
+1. **Utility scoring** — generate candidate activities from context (`sleep`, `eat at home`, `eat out`, `work`, `visit friend`, `go to park`, `shop`, `see doctor`…). Each candidate scores `urgency(need) × trait_weight × availability(context) − cost(distance, money, time)`. A challenger must beat the running plan by a switch margin, except that a need in crisis always pre-empts; night sleep is sticky only while no need is due — a moderate want at 3 a.m. is not worth waking for, but hunger falling due is.
 2. **GOAP** — the winning intent is compiled into a plan of primitive actions with preconditions/effects (`eat out ⇒ find venue ⇒ travel ⇒ buy food ⇒ eat`), which is robust to the world changing mid-plan (route blocked, venue closed) — the planner re-plans from the new state.
 3. **Execution** — primitives are navigation + animation + state effects; failure bubbles up to the planner.
 

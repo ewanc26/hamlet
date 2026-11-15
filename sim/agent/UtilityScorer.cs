@@ -13,7 +13,8 @@ public static class UtilityScorer
     /// <summary>A challenger must beat the running plan by this much to pre-empt it (§6.2).</summary>
     public const int SwitchMargin = 12;
 
-    private const int MealThreshold = 60;
+    /// <summary>Below this hunger a meal becomes eligible; also the bar for waking at night.</summary>
+    public const int MealThreshold = 60;
     private const int DaySleepThreshold = 40;
     private const int NightSleepDrive = 35;
     private const int WorkDrive = 55;
@@ -51,26 +52,37 @@ public static class UtilityScorer
         var needs = citizen.Needs;
         return activity switch
         {
-            ActivityKind.Sleep => SleepScore(citizen, household, clock, schedule),
+            // Starvation beats sleep: a citizen in hunger crisis never scores
+            // sleep, so the night-sleep rule cannot carry them to zero (§6.1).
+            ActivityKind.Sleep when !needs.InCrisis(NeedKind.Hunger) => SleepScore(citizen, household, clock, schedule),
             ActivityKind.Eat when needs[NeedKind.Hunger] < MealThreshold && household.MealsStocked > 0 =>
                 Scale(100 - needs[NeedKind.Hunger], citizen.Traits.Weight(NeedKind.Hunger))
                 - Distance(citizen, household.HomeX, household.HomeY),
-            ActivityKind.Work when schedule.IsShift(clock.Hour) && citizen.LastWorkDay != clock.Day =>
-                Scale(WorkDrive, citizen.Traits.Diligence)
+            // A shift never outranks a hunger crisis: a starving citizen quits
+            // to eat rather than working through starvation. Work drive also
+            // falls with satiety, so the lunch crossover is smooth (§6.1).
+            ActivityKind.Work when !needs.InCrisis(NeedKind.Hunger)
+                && schedule.IsShift(clock.Hour) && citizen.LastWorkDay != clock.Day =>
+                Scale(WorkDrive * needs[NeedKind.Hunger] / 100, citizen.Traits.Diligence)
                 - Distance(citizen, household.WorkX, household.WorkY),
-            ActivityKind.Shop when CanShop(household, clock, schedule) =>
+            ActivityKind.Shop when CanShop(citizen, household, clock, schedule) =>
                 Scale(ShopDrive + (PantryRestockAt - household.MealsStocked) * ShopUrgencyStep, CitizenTraits.Neutral)
                 - Distance(citizen, household.CornerShop!.X, household.CornerShop.Y),
             _ => 0,
         };
     }
 
-    /// <summary>A restock errand is worth running only while the shop is open, stocked, and affordable.</summary>
-    private static bool CanShop(Household household, Clock clock, DaySchedule schedule) =>
+    /// <summary>
+    /// A restock errand is worth running only while the shop is open, stocked,
+    /// and affordable — and only when the citizen is not hungry, unless the
+    /// pantry is bare and eating is impossible anyway. Meals come first.
+    /// </summary>
+    private static bool CanShop(Citizen citizen, Household household, Clock clock, DaySchedule schedule) =>
         household.CornerShop is { MealsInStock: > 0 }
         && household.Wallet is { Balance: >= Shop.PricePerMeal }
         && household.MealsStocked < PantryRestockAt
-        && schedule.IsShopOpen(clock.Hour);
+        && schedule.IsShopOpen(clock.Hour)
+        && (household.MealsStocked == 0 || citizen.Needs[NeedKind.Hunger] >= MealThreshold);
 
     private static int SleepScore(Citizen citizen, Household household, Clock clock, DaySchedule schedule)
     {
@@ -78,7 +90,11 @@ public static class UtilityScorer
         int urgency;
         if (schedule.IsNight(clock.Hour))
         {
-            urgency = Math.Max(100 - energy, NightSleepDrive);
+            // A rested citizen sleeps through the night — unless it is time to
+            // eat: hunger below the meal threshold drops the night floor so the
+            // citizen wakes and eats instead of sleeping into starvation (§6.1).
+            var floor = citizen.Needs[NeedKind.Hunger] < MealThreshold ? 0 : NightSleepDrive;
+            urgency = Math.Max(100 - energy, floor);
         }
         else
         {
