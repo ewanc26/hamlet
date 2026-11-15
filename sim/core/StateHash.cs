@@ -24,5 +24,7 @@ public struct StateHash
 
     public void Mix(int value) => Mix((ulong)value);
 
+    public void Mix(long value) => Mix((ulong)value);
+
     public override string ToString() => $"0x{_hash:X16}";
 }

@@ -16,7 +16,11 @@ public sealed class Clock
 
     public long Tick { get; private set; }
 
+    /// <summary>Whole sim days since the world started; the work-shift bookkeeping key.</summary>
+    public long Day => Tick / TicksPerDay;
+
     public int MinuteOfDay => (int)(Tick % MinutesPerDay);
+    public int Minute => MinuteOfDay % MinutesPerHour;
     public int Hour => MinuteOfDay / MinutesPerHour;
     public int DayOfMonth => (int)(Tick / TicksPerDay) % DaysPerMonth + 1;
     public int Month => (int)(Tick / ((long)TicksPerDay * DaysPerMonth)) % MonthsPerYear + 1;

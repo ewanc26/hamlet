@@ -6,17 +6,22 @@ using Hamlet.Sim.Economy;
 namespace Hamlet.Sim;
 
 /// <summary>
-/// The whole simulation (§4). Owns clock, world, agents, and economy; accepts
-/// a command queue; emits a batched event list per tick. Engine-agnostic by
-/// construction: nothing here knows Godot exists.
+/// The whole simulation (§4). Owns clock, world, agents, households, and
+/// economy; accepts a command queue; emits a batched event list per tick.
+/// Engine-agnostic by construction: nothing here knows Godot exists.
 /// </summary>
 public sealed class Simulation
 {
+    private const int ReplanInterval = 60; // an hourly reconsideration (§6.2)
+
     public Clock Clock { get; } = new();
     public DeterministicRandom Random { get; }
     public WorldGrid Grid { get; }
     public LedgerBook LedgerBook { get; } = new();
     public AgentBodies Bodies { get; } = new();
+    public HouseholdBook Households { get; } = new();
+    public NeedRules Rules { get; } = NeedRules.Default;
+    public DaySchedule Schedule { get; } = DaySchedule.Default;
 
     private readonly Queue<ISimCommand> _inbox = new();
     private readonly List<SimEvent> _outbox = new();
@@ -35,7 +40,7 @@ public sealed class Simulation
 
     public void ClearEvents() => _outbox.Clear();
 
-    /// <summary>One fixed tick: drain commands, advance time, emit batched events.</summary>
+    /// <summary>One fixed tick: drain commands, advance time, run agents, emit batched events.</summary>
     public void TickOnce()
     {
         while (_inbox.Count > 0)
@@ -47,6 +52,65 @@ public sealed class Simulation
 
         Clock.Advance();
         _outbox.Add(new SimEvent { Kind = SimEventKind.TickAdvanced, Tick = Clock.Tick });
+
+        foreach (var citizen in Bodies.Citizens)
+            TickCitizen(citizen);
+    }
+
+    private void TickCitizen(Citizen citizen)
+    {
+        if (!citizen.IsAlive)
+            return;
+        var household = Households.Find(citizen.HouseholdId);
+        if (household is null)
+            return; // citizens spawned outside a household are not simulated yet
+
+        NeedsSystem.Decay(citizen, Clock.Tick);
+
+        var previous = citizen.Plan.Intent;
+        if ((Clock.Tick + citizen.Id) % ReplanInterval == 0 || InCrisis(citizen))
+            Replan(citizen, household, allowHysteresis: true);
+
+        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules))
+            Replan(citizen, household, allowHysteresis: false);
+
+        if (citizen.Plan.Intent == previous)
+            return;
+
+        _outbox.Add(new SimEvent
+        {
+            Kind = SimEventKind.ActivityChanged,
+            Tick = Clock.Tick,
+            CitizenId = citizen.Id,
+            Activity = (byte)citizen.Plan.Intent,
+            X = citizen.X,
+            Y = citizen.Y,
+        });
+    }
+
+    private static bool InCrisis(Citizen citizen) =>
+        (citizen.Needs.InCrisis(NeedKind.Hunger) && citizen.Plan.Intent != ActivityKind.Eat)
+        || (citizen.Needs.InCrisis(NeedKind.Energy) && citizen.Plan.Intent != ActivityKind.Sleep);
+
+    private void Replan(Citizen citizen, Household household, bool allowHysteresis)
+    {
+        var best = UtilityScorer.Best(citizen, household, Clock, Schedule);
+        var current = citizen.Plan;
+
+        if (allowHysteresis && !current.IsNone && current.Intent != best)
+        {
+            // Sleep is only interrupted by a need crisis: a moderate need at
+            // 3 a.m. is not worth waking for (§6.2 plan robustness).
+            if (current.Intent == ActivityKind.Sleep && Schedule.IsNight(Clock.Hour) && !InCrisis(citizen))
+                return;
+
+            var currentScore = UtilityScorer.Score(current.Intent, citizen, household, Clock, Schedule);
+            var bestScore = UtilityScorer.Score(best, citizen, household, Clock, Schedule);
+            if (bestScore <= currentScore + UtilityScorer.SwitchMargin)
+                return;
+        }
+
+        citizen.Plan = IntentPlanner.Compile(best, citizen, household);
     }
 
     /// <summary>Rolls up everything that defines the world into one fingerprint (§7.6).</summary>
@@ -57,6 +121,41 @@ public sealed class Simulation
         hash.Mix(Grid.RoadCount);
         hash.Mix(Grid.ComputeTerrainHash().Value);
         hash.Mix((ulong)_commandsApplied);
+
+        foreach (var household in Households.Households)
+        {
+            hash.Mix(household.Id);
+            hash.Mix(household.HomeX);
+            hash.Mix(household.HomeY);
+            hash.Mix(household.WorkX);
+            hash.Mix(household.WorkY);
+            hash.Mix(household.MealsStocked);
+        }
+
+        foreach (var citizen in Bodies.Citizens)
+        {
+            hash.Mix(citizen.Id);
+            hash.Mix(citizen.HouseholdId);
+            hash.Mix(citizen.IsAlive ? 1 : 0);
+            hash.Mix(citizen.X);
+            hash.Mix(citizen.Y);
+            hash.Mix(citizen.LastWorkDay);
+            hash.Mix(citizen.Traits.Diligence);
+            for (var kind = 0; kind < Needs.Count; kind++)
+            {
+                hash.Mix(citizen.Needs[(NeedKind)kind]);
+                hash.Mix(citizen.Traits.Weight((NeedKind)kind));
+                hash.Mix(citizen.Traits.DecayEveryTicks((NeedKind)kind));
+            }
+
+            var plan = citizen.Plan;
+            hash.Mix((int)plan.Intent);
+            hash.Mix((int)plan.Phase);
+            hash.Mix(plan.TargetX);
+            hash.Mix(plan.TargetY);
+            hash.Mix(plan.PhaseTicks);
+        }
+
         return hash;
     }
 
@@ -68,8 +167,47 @@ public sealed class Simulation
                 if (Grid.PlaceRoad(placeRoad.X, placeRoad.Y))
                     _outbox.Add(new SimEvent { Kind = SimEventKind.RoadPlaced, Tick = Clock.Tick, X = placeRoad.X, Y = placeRoad.Y });
                 break;
+            case FoundHousehold found:
+                Found(found);
+                break;
             default:
                 throw new NotSupportedException($"unknown command: {command.GetType()}");
         }
+    }
+
+    private void Found(FoundHousehold command)
+    {
+        if (!Grid.InBounds(command.HomeX, command.HomeY) || !Grid.InBounds(command.WorkX, command.WorkY))
+            throw new ArgumentOutOfRangeException(nameof(command), "household coordinates must be inside the world");
+
+        var household = Households.Found(command.HomeX, command.HomeY, command.WorkX, command.WorkY);
+        var members = Math.Max(1, command.Members);
+        for (var i = 0; i < members; i++)
+        {
+            var citizen = Bodies.SpawnCitizen(CitizenTraits.Roll(Random, Rules));
+            citizen.HouseholdId = household.Id;
+            citizen.X = household.HomeX;
+            citizen.Y = household.HomeY;
+            citizen.Plan = IntentPlanner.Compile(
+                UtilityScorer.Best(citizen, household, Clock, Schedule), citizen, household);
+            _outbox.Add(new SimEvent
+            {
+                Kind = SimEventKind.ActivityChanged,
+                Tick = Clock.Tick,
+                CitizenId = citizen.Id,
+                Activity = (byte)citizen.Plan.Intent,
+                X = citizen.X,
+                Y = citizen.Y,
+            });
+        }
+
+        _outbox.Add(new SimEvent
+        {
+            Kind = SimEventKind.HouseholdFounded,
+            Tick = Clock.Tick,
+            HouseholdId = household.Id,
+            X = household.HomeX,
+            Y = household.HomeY,
+        });
     }
 }

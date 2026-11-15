@@ -8,3 +8,13 @@ namespace Hamlet.Sim.Core;
 public interface ISimCommand
 {
 }
+
+/// <summary>Found a settler household with a home, a job site, and a pantry (§6.4).</summary>
+public sealed class FoundHousehold : ISimCommand
+{
+    public int HomeX { get; init; }
+    public int HomeY { get; init; }
+    public int WorkX { get; init; }
+    public int WorkY { get; init; }
+    public int Members { get; init; } = 1;
+}

@@ -1,5 +1,6 @@
 using Hamlet.Sim;
 using Hamlet.Sim.City;
+using Hamlet.Sim.Core;
 using Xunit;
 
 namespace Hamlet.Sim.Tests;
@@ -11,14 +12,18 @@ namespace Hamlet.Sim.Tests;
 /// </summary>
 public class DeterminismTests
 {
-    private static (ulong Hash, int Roads) RunWorld(ulong seed)
+    private static (ulong Hash, int Roads, int Citizens) RunWorld(ulong seed)
     {
         var simulation = new Simulation(seed, 64);
         for (var i = 0; i < 50; i++)
             simulation.Enqueue(new PlaceRoad { X = 5 + i, Y = 7 });
+        simulation.Enqueue(new FoundHousehold { HomeX = 10, HomeY = 10, WorkX = 30, WorkY = 10, Members = 2 });
         for (long tick = 0; tick < 2_000; tick++)
+        {
             simulation.TickOnce();
-        return (simulation.ComputeStateHash().Value, simulation.Grid.RoadCount);
+            simulation.ClearEvents();
+        }
+        return (simulation.ComputeStateHash().Value, simulation.Grid.RoadCount, simulation.Bodies.Citizens.Count);
     }
 
     [Fact]
@@ -28,6 +33,7 @@ public class DeterminismTests
         var second = RunWorld(12345);
         Assert.Equal(first.Hash, second.Hash);
         Assert.Equal(first.Roads, second.Roads);
+        Assert.Equal(first.Citizens, second.Citizens);
     }
 
     [Fact]

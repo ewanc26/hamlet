@@ -42,18 +42,23 @@ public sealed class AgentBody
 /// </summary>
 public sealed class AgentBodies
 {
-    private readonly Dictionary<long, Citizen> _citizens = new();
+    private readonly List<Citizen> _citizens = new();
+    private readonly Dictionary<long, Citizen> _byId = new();
     private readonly Dictionary<long, AgentBody> _bodies = new();
     private long _nextCitizenId = 1;
     private long _nextBodyId = 1;
 
-    public IReadOnlyCollection<Citizen> Citizens => _citizens.Values;
+    /// <summary>Spawn order is id order: the deterministic iteration order (§7.3).</summary>
+    public IReadOnlyList<Citizen> Citizens => _citizens;
     public IReadOnlyCollection<AgentBody> Bodies => _bodies.Values;
 
-    public Citizen SpawnCitizen()
+    public Citizen SpawnCitizen() => SpawnCitizen(CitizenTraits.Baseline);
+
+    public Citizen SpawnCitizen(CitizenTraits traits)
     {
-        var citizen = new Citizen { Id = _nextCitizenId++ };
-        _citizens[citizen.Id] = citizen;
+        var citizen = new Citizen { Id = _nextCitizenId++, Traits = traits };
+        _citizens.Add(citizen);
+        _byId[citizen.Id] = citizen;
         return citizen;
     }
 
@@ -63,7 +68,7 @@ public sealed class AgentBodies
         var members = new List<Citizen>(citizenIds.Count);
         var sorted = citizenIds.OrderBy(id => id).ToList();
         foreach (var id in sorted)
-            members.Add(_citizens[id]); // unknown id: loud failure, never silent drops
+            members.Add(_byId[id]); // unknown id: loud failure, never silent drops
         var body = new AgentBody(_nextBodyId++, members);
         _bodies[body.BodyId] = body;
         return body;
