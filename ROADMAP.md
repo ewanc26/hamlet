@@ -15,9 +15,10 @@ entities now — firms pay shifts from payroll ledgers, households buy meal
 bundles from shop counters, and shops restock wholesale from a supplier firm
 each morning — and the stability gate is green: 100 citizens on one street
 stay fed and employed for 10 in-game days with no intervention, replaying
-bit-identically from the seed. LOD tier 2 is in: the camera focus square rides
-the command stream, and off-camera citizens move coarse while their needs stay
-full. The first household body remains.
+bit-identically from the seed. LOD tier 2 and the first household body are in:
+the camera focus square rides the command stream (off-camera citizens move
+coarse while their needs stay full), and compatible family trips merge into one
+body with mass, splitting losslessly on crisis or divergence.
 
 ## milestones
 
@@ -48,8 +49,13 @@ full. The first household body remains.
   outside they run standard — needs still decay every tick, replanning stays
   on the staggered 60-tick bucket, and movement jumps straight to the plan's
   anchor instead of per-tick nav.
-- **Household bodies**: compatible family trips merge into one body with mass,
-  and a merge → split → merge round trip must be lossless (property test).
+- **Household bodies** — **landed (first merge tier)**: at each tick boundary a
+  household's co-located members with the same intent and target merge into one
+  body (§6.6); the lowest-id member plans and moves, riders follow, and perform
+  effects scale by mass (every member eats and is paid, shopping buys mass ×
+  bundle). A finished trip, a divergent member, or a member crisis splits the
+  body losslessly. Family-sized only (`MaxBodyMembers = 8`); the merge → split →
+  merge round trip is a seeded property test.
 - **100 citizens, 10 in-game days, no intervention** — **landed as the
   stability gate** (`TownStabilityTests`): no hunger crisis, ≥ 90% employed in
   the last two days, every pantry stocked at the end, total money unchanged,

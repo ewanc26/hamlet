@@ -72,8 +72,12 @@ public sealed class Simulation
         if (Clock.Hour == RestockHour && Clock.Minute == 0)
             RestockShops();
 
+        SplitBrokenBodies();
+
         foreach (var citizen in Bodies.Citizens)
             TickCitizen(citizen);
+
+        MergeHouseholdTrips();
     }
 
     /// <summary>Shops order from their supplier once a day, before the doors open (§7.3).</summary>
@@ -106,11 +110,23 @@ public sealed class Simulation
 
         NeedsSystem.Decay(citizen, Clock.Tick);
 
+        var body = Bodies.BodyOf(citizen.Id) is { } bodyId ? Bodies.GetBody(bodyId) : null;
+        if (body is not null && citizen.Id != body.RepresentativeId)
+        {
+            // Riding a household body (§6.6): needs still decay, the position
+            // follows the representative, and there is no plan of its own.
+            var representative = Bodies.FindCitizen(body.RepresentativeId)!;
+            citizen.X = representative.X;
+            citizen.Y = representative.Y;
+            return;
+        }
+
         var previous = citizen.Plan.Intent;
         if ((Clock.Tick + citizen.Id) % ReplanInterval == 0 || InCrisis(citizen))
             Replan(citizen, household, allowHysteresis: true);
 
-        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules, Grid.Size, coarse: !IsFullLod(citizen)))
+        if (ActivityRunner.Tick(citizen, household, Clock, Schedule, Rules, Grid.Size,
+                coarse: !IsFullLod(citizen), bodyMembers: body?.Agents))
             Replan(citizen, household, allowHysteresis: false);
 
         if (citizen.Plan.Intent == previous)
@@ -125,6 +141,83 @@ public sealed class Simulation
             X = citizen.X,
             Y = citizen.Y,
         });
+    }
+
+    /// <summary>
+    /// Split bodies whose shared trip is over or whose members diverged or
+    /// entered crisis (§6.6 de-merge triggers). Lossless: members keep their
+    /// own records and replan individually from here.
+    /// </summary>
+    private void SplitBrokenBodies()
+    {
+        var bodies = Bodies.Bodies;
+        for (var i = bodies.Count - 1; i >= 0; i--)
+        {
+            var body = bodies[i];
+            var representative = Bodies.FindCitizen(body.RepresentativeId);
+            if (representative is null || representative.Plan.IsNone)
+            {
+                Bodies.DeMerge(body.BodyId);
+                continue;
+            }
+            var split = false;
+            for (var m = 0; m < body.Agents.Count; m++)
+            {
+                var member = body.Agents[m];
+                if (!member.IsAlive || InCrisis(member) || member.Plan.Intent != representative.Plan.Intent)
+                {
+                    split = true;
+                    break;
+                }
+            }
+            if (split)
+                Bodies.DeMerge(body.BodyId);
+        }
+    }
+
+    private readonly List<Citizen> _mergeScratch = new();
+
+    /// <summary>
+    /// First merge tier (§6.6): at the tick boundary, a household's co-located
+    /// members with the same intent and target merge into one body. Family
+    /// sized only — larger households stay individual until the city stage.
+    /// </summary>
+    private void MergeHouseholdTrips()
+    {
+        foreach (var household in Households.Households)
+        {
+            _mergeScratch.Clear();
+            foreach (var citizen in Bodies.Citizens)
+                if (citizen.IsAlive && citizen.HouseholdId == household.Id && Bodies.BodyOf(citizen.Id) is null)
+                    _mergeScratch.Add(citizen);
+            if (_mergeScratch.Count < 2 || _mergeScratch.Count > AgentBodies.MaxBodyMembers)
+                continue;
+
+            var first = _mergeScratch[0];
+            if (first.Plan.IsNone || InCrisis(first))
+                continue;
+            var compatible = true;
+            for (var i = 1; i < _mergeScratch.Count; i++)
+            {
+                var other = _mergeScratch[i];
+                if (other.Plan.Intent != first.Plan.Intent
+                    || other.Plan.TargetX != first.Plan.TargetX
+                    || other.Plan.TargetY != first.Plan.TargetY
+                    || other.X != first.X || other.Y != first.Y
+                    || InCrisis(other))
+                {
+                    compatible = false;
+                    break;
+                }
+            }
+            if (!compatible)
+                continue;
+
+            var ids = new List<long>(_mergeScratch.Count); // allocates only when a merge actually forms
+            foreach (var member in _mergeScratch)
+                ids.Add(member.Id);
+            Bodies.Merge(ids);
+        }
     }
 
     private static bool InCrisis(Citizen citizen) =>
@@ -198,6 +291,15 @@ public sealed class Simulation
             hash.Mix(firm.X);
             hash.Mix(firm.Y);
             hash.Mix(firm.Ledger.Balance);
+        }
+
+        hash.Mix(Bodies.Bodies.Count);
+        foreach (var body in Bodies.Bodies)
+        {
+            hash.Mix(body.BodyId);
+            hash.Mix(body.Mass);
+            foreach (var memberId in body.Members)
+                hash.Mix(memberId);
         }
 
         foreach (var citizen in Bodies.Citizens)

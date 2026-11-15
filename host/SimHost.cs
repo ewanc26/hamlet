@@ -53,7 +53,7 @@ public partial class SimHost : Node
         _simulation = new Simulation(seed: 12345, gridSize: 64);
         _terrain = _simulation.Grid.CaptureTerrain();
         _site = FindSettlementSite(_simulation.Grid);
-        FoundGreyboxSettlement(_site, members: 1);
+        FoundGreyboxSettlement(_site, members: 3); // a family: merges into one body (§6.6)
 
         _thread = new Thread(RunSimulation)
         {

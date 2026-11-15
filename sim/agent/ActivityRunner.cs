@@ -7,7 +7,9 @@ namespace Hamlet.Sim.Agent;
 /// activity. Travel follows the road route compiled by <see cref="IntentPlanner"/>
 /// when one exists; with no connecting road it falls back to the direct
 /// straight-line walk, so road-less worlds still run (§7.2). Off-camera
-/// (standard LOD, §6.5) travellers jump straight to the target instead.
+/// (standard LOD, §6.5) travellers jump straight to the target instead. When
+/// the actor represents a household body (§6.6), perform effects apply to every
+/// member and shopping scales by mass.
 /// </summary>
 public static class ActivityRunner
 {
@@ -18,7 +20,8 @@ public static class ActivityRunner
         DaySchedule schedule,
         NeedRules rules,
         int gridSize,
-        bool coarse = false)
+        bool coarse = false,
+        IReadOnlyList<Citizen>? bodyMembers = null)
     {
         var plan = citizen.Plan;
         if (plan.IsNone)
@@ -46,7 +49,7 @@ public static class ActivityRunner
             return false;
         }
 
-        return Perform(citizen, household, clock, schedule, rules, plan);
+        return Perform(citizen, household, clock, schedule, rules, plan, bodyMembers);
     }
 
     /// <summary>Walk one route tile; a stale or absent route walks the direct line.</summary>
@@ -79,7 +82,20 @@ public static class ActivityRunner
             citizen.Y += Math.Sign(targetY - citizen.Y);
     }
 
-    private static bool Perform(Citizen citizen, Household household, Clock clock, DaySchedule schedule, NeedRules rules, Plan plan)
+    /// <summary>
+    /// Perform the plan. <paramref name="bodyMembers"/> is the full member list
+    /// of the household body the actor represents (§6.6) — every member eats,
+    /// is paid, and is rested, and shopping scales by mass; null means the
+    /// actor is an individual and no list is touched.
+    /// </summary>
+    private static bool Perform(
+        Citizen citizen,
+        Household household,
+        Clock clock,
+        DaySchedule schedule,
+        NeedRules rules,
+        Plan plan,
+        IReadOnlyList<Citizen>? bodyMembers)
     {
         var next = plan.Advance();
         switch (plan.Intent)
@@ -87,7 +103,7 @@ public static class ActivityRunner
             case ActivityKind.Sleep:
             {
                 if (clock.Tick % rules.SleepTicksPerEnergyPoint == 0)
-                    citizen.Needs.Restore(NeedKind.Energy, 1f);
+                    RestoreEach(citizen, bodyMembers, NeedKind.Energy, 1f);
                 var wake = clock.MinuteOfDay == schedule.WakeHour * Clock.MinutesPerHour;
                 var rested = citizen.Needs[NeedKind.Energy] >= 100
                     && clock.Hour >= schedule.WakeHour
@@ -107,8 +123,17 @@ public static class ActivityRunner
                     citizen.Plan = next;
                     return false;
                 }
-                if (household.TryConsumeMeal())
-                    citizen.Needs.Restore(NeedKind.Hunger, rules.MealHungerRestore);
+                if (bodyMembers is null)
+                {
+                    if (household.TryConsumeMeal())
+                        citizen.Needs.Restore(NeedKind.Hunger, rules.MealHungerRestore);
+                }
+                else
+                {
+                    for (var i = 0; i < bodyMembers.Count; i++)
+                        if (household.TryConsumeMeal())
+                            bodyMembers[i].Needs.Restore(NeedKind.Hunger, rules.MealHungerRestore);
+                }
                 break;
             }
 
@@ -119,8 +144,19 @@ public static class ActivityRunner
                     citizen.Plan = next;
                     return false;
                 }
-                citizen.LastWorkDay = clock.Day;
-                household.CollectWage();
+                if (bodyMembers is null)
+                {
+                    citizen.LastWorkDay = clock.Day;
+                    household.CollectWage();
+                }
+                else
+                {
+                    for (var i = 0; i < bodyMembers.Count; i++)
+                    {
+                        bodyMembers[i].LastWorkDay = clock.Day;
+                        household.CollectWage();
+                    }
+                }
                 break;
             }
 
@@ -131,7 +167,7 @@ public static class ActivityRunner
                     citizen.Plan = next;
                     return false;
                 }
-                household.TryBuyMeals(rules.ShopBundleMeals);
+                household.TryBuyMeals(rules.ShopBundleMeals * (bodyMembers?.Count ?? 1));
                 break;
             }
         }
@@ -139,5 +175,16 @@ public static class ActivityRunner
         citizen.Route.Clear();
         citizen.Plan = default;
         return true;
+    }
+
+    private static void RestoreEach(Citizen actor, IReadOnlyList<Citizen>? members, NeedKind kind, float amount)
+    {
+        if (members is null)
+        {
+            actor.Needs.Restore(kind, amount);
+            return;
+        }
+        for (var i = 0; i < members.Count; i++)
+            members[i].Needs.Restore(kind, amount);
     }
 }
