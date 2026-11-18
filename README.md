@@ -1,3 +1,10 @@
+<p align="center">
+  <a href="https://github.com/ewanc26/hamlet/actions/workflows/ci.yml"><img src="https://github.com/ewanc26/hamlet/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/ewanc26/hamlet/releases/latest"><img src="https://img.shields.io/github/v/release/ewanc26/hamlet?sort=semver" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ewanc26/hamlet?label=licence" alt="Licence"></a>
+  <a href="https://github.com/sponsors/ewanc26"><img src="https://img.shields.io/github/sponsors/ewanc26?logo=githubsponsors&logoColor=white&label=sponsors" alt="Sponsor"></a>
+</p>
+
 # hamlet
 
 *a city-to-country builder* — every citizen a persistent, autonomous agent.
@@ -48,7 +55,8 @@ dotnet run --project headless -- 12345 10000 128
 ```
 
 The suite includes the determinism gate: the same seed and command stream must
-produce a bit-identical state hash on every run, on every machine, in CI.
+produce a bit-identical state hash on every run, on every machin
+e, in CI.
 
 ## Run the game
 
@@ -60,7 +68,10 @@ godot --path . -- --stress=1000   # 1,000 extra settlers on the strip (M0 budget
 WASD pans, the wheel zooms, right-drag orbits. The HUD shows the sim clock, the
 lead citizen's activity and needs, and the frame rate; every number is a real
 value batched across the C# boundary once a second.
+## Contributing
 
-## License
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the checks required before opening a pull request.
+
+## Licence
 
 AGPL-3.0 — see [LICENSE](LICENSE).
