@@ -55,8 +55,7 @@ dotnet run --project headless -- 12345 10000 128
 ```
 
 The suite includes the determinism gate: the same seed and command stream must
-produce a bit-identical state hash on every run, on every machin
-e, in CI.
+produce a bit-identical state hash on every run, on every machine, in CI.
 
 ## Run the game
 
@@ -68,10 +67,9 @@ godot --path . -- --stress=1000   # 1,000 extra settlers on the strip (M0 budget
 WASD pans, the wheel zooms, right-drag orbits. The HUD shows the sim clock, the
 lead citizen's activity and needs, and the frame rate; every number is a real
 value batched across the C# boundary once a second.
+
+## Licence
+AGPL-3.0 — see [LICENSE](LICENSE).
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the checks required before opening a pull request.
-
-## Licence
-
-AGPL-3.0 — see [LICENSE](LICENSE).
