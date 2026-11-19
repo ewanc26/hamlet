@@ -2,6 +2,10 @@
 
 Guidance for AI coding agents working in **hamlet**.
 
+Mandatory instructions for AI coding agents (and human contributors) in this
+repository. Every rule below is standing and admits no exception unless a
+later section of `docs/project-brief.md` explicitly supersedes it.
+
 ## Read before writing any code
 
 - `docs/project-brief.md` — the design document. Section references below
@@ -39,8 +43,7 @@ Every file is an **atom**: `<scope>/[subscope/]<atom>.<ext>`.
 - `sim/` and `headless/` are plain C#: **no `Godot` namespaces, no Godot
   types, ever**. If a `sim/` file needs `using Godot;` to compile, the
   design is wrong — move that code to `host/` or `ui/`.
-- `host/` contains the **only** C# Node. Nothing
- else in C# may derive from
+- `host/` contains the **only** C# Node. Nothing else in C# may derive from
   a Godot type.
 - GDScript owns the scene tree. It reaches the simulation only through
   `SimHost.enqueue_command()` and the `events_ready` signal.
@@ -80,8 +83,7 @@ categorical fields (stay categorical). Never introduce a second scale.
 ## Versioning — SemVer, one atom of truth
 
 - The version lives in one place: `Directory.Build.props` (`<Version>`).
-  Every project inherits it; no project sets its ow
-n version.
+  Every project inherits it; no project sets its own version.
 - Tags are `vX.Y.Z` (e.g. `v0.1.0`). Pre-1.0: MINOR bumps per milestone
   (M0 → 0.1.0, M1 → 0.2.0, …), PATCH for fixes within a milestone;
   breaking changes also bump MINOR until 1.0.
