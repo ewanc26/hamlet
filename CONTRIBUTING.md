@@ -1,52 +1,35 @@
-# contributing to hamlet
+# Contributing to Hamlet
 
-## File architecture (standing rule)
+*A city-to-country builder* — every citizen a persistent, autonomous agent. Hamlet grows from a handful of settlers on empty land to a nation of specialised, trading settlements, one continuous simulation at every scale. Godot 4.7, C#/.NET simulation core, GDScript presentation, AGPL-3.0. Thanks for wanting to help!
 
-Every file is an atom: `<scope>/[subscope/]<atom>.<ext>`.
+The full design lives in [`docs/project-brief.md`](docs/project-brief.md); the milestone ladder is in [`ROADMAP.md`](ROADMAP.md).
 
-- One concept per file; a tightly-bound family (all event kinds, the ledger pair)
-  is one atom, but unrelated concepts never share a file.
-- Lowercase scopes and subscopes: `sim/core`, `tests/sim`, `data/samples`.
-- At most one subscope level — `sim/agent/needs` is a smell, `sim/agent/Needs.cs` is not.
-- C# atom names match their class exactly (`SimHost.cs`) — Godot enforces this.
-- GDScript atoms are snake_case (`hud.gd`); JSON atoms are kebab/snake-case.
-- Platform-enforced paths (`.github/workflows/ci.yml`, `project.godot`) are the
-  only exceptions.
+## The split (the rules that make the project work)
 
-## The language split
+| Side | Language | Lives in |
+| --- | --- | --- |
+| Simulation core (engine-agnostic, deterministic, headless) | C# | `sim/` |
+| The single Godot boundary Node (thread + signals) | C# | `host/` |
+| Presentation, UI, tools | GDScript | `ui/`, `scenes/` |
+| Headless console harness | C# | `headless/` |
+| Tests incl. the determinism gate | C# | `tests/` |
 
-- `sim/` and `headless/` are plain C#: no `Godot` namespaces, ever. If a type
-  compiles in `sim/` because of a `using Godot;`, the PR is wrong.
-- `host/` contains the only C# Node. Nothing else in C# may derive from a Godot type.
-- GDScript owns the scene tree. It reaches the sim via `SimHost.enqueue_command()`
-  and the `events_ready` signal — never per-frame per-agent calls across the boundary.
-- Calls cross the boundary only at tick boundaries, in batch.
+**One C# Node only (`SimHost`); cross-language calls happen only at tick boundaries; the sim never touches the scene tree.** The full contract is in the brief, §4 — read it before your first PR.
 
-## Determinism rules
+## File architecture
 
-- The only randomness source is `DeterministicRandom` — no `System.Random`,
-  no `GD.RandRange`, no `randi()`.
-- Nothing floats persist: the 0-100 scale quantises on write.
-- Tick loops allocate nothing: pool or pre-size.
-- Every PR adds or updates a test; CI byte-compares runs from the same seed.
+Every file is an atom — one concept per file — at `<scope>/[subscope/]<atom>.<ext>`: lowercase scopes, at most one subscope level, C# atoms named exactly for their class (Godot requires it), snake_case GDScript atoms, one JSON file per content entity.
 
-## Commits
+## Build & test
 
-One commit = one atom or one coherent concept (a new atom plus its tests,
-one atom's fix, one rename). The subject is imperative and names the atom
-or scope; the body explains why. Every commit builds and leaves the suite
-green on its own — amend or rebase instead of "fix the last commit".
+The .NET 8 SDK is all you need for the sim and its tests; the Godot 4.7 .NET editor is only required to run the game itself. The **determinism gate** in `tests/` is the gate that must not regress: same seed, same behaviour, every time.
 
-## Versioning (SemVer)
+## Before opening a PR
 
-The version lives in `Directory.Build.props` — the single source of truth.
-Pre-1.0: MINOR per milestone, PATCH for fixes. A bump ships with its
-matching `CHANGELOG.md` entry in the same commit; CI then tags and publishes
-`vX.Y.Z` automatically when the version atom changes on `main`. Do not tag
-by hand or version projects individually.
+- `dotnet test` (sim + tests) passes, determinism intact; the headless harness still runs.
+- Conventional commits; one-concept PRs that match the atom structure; say how you verified.
+- AI-assisted PRs welcome; stand behind every line and run the gate yourself.
 
-## Tests
+## Licence
 
-```sh
-dotnet test tests/Hamlet.Sim.Tests.csproj
-```
+AGPL-3.0 (see [LICENSE](LICENSE)). Contributions accepted under the same terms.
